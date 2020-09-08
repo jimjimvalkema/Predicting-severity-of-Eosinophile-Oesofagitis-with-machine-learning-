@@ -1,0 +1,11 @@
+---
+title: "Eosinofiele Oesofagitis dataset EDA"
+author: "Jim Jim Valkema"
+date: "9/8/2020"
+output: pdf_document
+---
+
+## Goal
+
+
+## Data
