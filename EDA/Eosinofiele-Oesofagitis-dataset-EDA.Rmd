@@ -5,7 +5,19 @@ date: "9/8/2020"
 output: pdf_document
 ---
 
-## Goal
-
+## Research question
+Can the peak eosinophil baseline be predicted with classical machine learning using the measured nutrient intake data.
+```{r}
+# http://www.milanor.net/blog/how-to-open-an-spss-file-into-r/
+library(foreign)
+#install.packages("janitor")
+library(janitor)
+library("memisc")
+dataset = read.spss("../data/Datafile compleet 20-03-2020 voor Hanze SET def.sav", to.data.frame=TRUE, use.value.labels=F, reencode=F, use.missings	=F)
+dataset <- remove_empty(dataset, which = c("rows", "cols"), quiet = TRUE)
+hist(dataset$PeakEosBaseline_Max)
+plot(dataset$PeakEosBaseline_Max, dataset$B.Irontotal)
+summary(dataset$B.kCal)
+```
 
 ## Data
