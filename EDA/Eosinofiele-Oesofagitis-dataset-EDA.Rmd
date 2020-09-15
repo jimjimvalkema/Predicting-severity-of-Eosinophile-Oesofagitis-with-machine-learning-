@@ -5,19 +5,58 @@ date: "9/8/2020"
 output: pdf_document
 ---
 
+## Dataset
+TODO 
+Where from how collected
+What do vars mean
+datatypes, units, values
+What is the dependent class variable
+
 ## Research question
-Can the peak eosinophil baseline be predicted with classical machine learning using the measured nutrient intake data.
+Can the peak eosinophil baseline in individuals with eosinophilic oesophagitis be predicted with classical machine learning using the measured nutrient intake data?
+
+## Missing data
+Missing columns TODO
+37 empty rows
+180 empty columns 
+Lots of columns with more then 70 % missing values
 ```{r}
 # http://www.milanor.net/blog/how-to-open-an-spss-file-into-r/
 library(foreign)
 #install.packages("janitor")
 library(janitor)
+#install.packages("memisc")
 library("memisc")
-dataset = read.spss("../data/Datafile compleet 20-03-2020 voor Hanze SET def.sav", to.data.frame=TRUE, use.value.labels=F, reencode=F, use.missings	=F)
-dataset <- remove_empty(dataset, which = c("rows", "cols"), quiet = TRUE)
-hist(dataset$PeakEosBaseline_Max)
-plot(dataset$PeakEosBaseline_Max, dataset$B.Irontotal)
-summary(dataset$B.kCal)
+library("ggplot2")
+dataset_original = read.spss("../data/Datafile compleet 20-03-2020 voor Hanze SET def.sav", to.data.frame=TRUE, use.value.labels=F, reencode=F, use.missings	=F)
+dataset_no_empty <- remove_empty(dataset_original, which = c("rows", "cols"), quiet = FALSE)
+#sapply(dataset_no_empty, function(x) sum(is.na(x)))[]
+
+dataset_clean <- dataset_no_empty[, which(colMeans(!is.na(dataset_no_empty)) > 0.4)]
+
+```
+```{r}
+print("columns removed because too many missing values")
+ncol(dataset_no_empty)- ncol(dataset_clean)
+print("columns romved in total")
+ncol(dataset_original)- ncol(dataset_clean)
+# TODO do in the markdown text
+ncol(dataset_clean)
+#colnames(dataset_original)
+library(gridExtra)
+library(grid)
+grid.table(dataset_clean[1,40])
+grid.table(c(colnames(dataset_original), attributes(dataset_original)))
+```
+
+### distrubution
+```{r}
+logged.dataset <- log2(dataset[26:49])
+melted.dataset <- melt(logged.dataset)
+
+ggplot(melted.dataset, aes(value)) +
+  geom_density(adjust = 0.5) +
+  facet_wrap(~variable) + ggtitle( "attributes density")
 ```
 
 ## Data
