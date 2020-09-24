@@ -2,25 +2,32 @@
 title: "Eosinofiele Oesofagitis dataset EDA"
 author: "Jim Jim Valkema"
 date: "9/8/2020"
-output: pdf_document
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
 ---
 
 ## Dataset
-TODO 
-Where from how collected
+TODO neocate en ffed
+Nutritional intake was assessed in 40 Dutch adult EoE patients participating in the Supplemental Elemental Trial (SET) using 3-day food diaries. In this randomized controlled trial, diagnosed patients received either a four-food elimination diet alone (FFED) or FFED with addition of an amino acid-based formula (Neocate) for 6 weeks. Disease severity was assessed by peak eosinophil count/high power field (PEC) in esophageal biopsy specimens. Multiple linear regression analyses were performed to assess associations between the intake of nutrients and foods per 1000 kCal and PEC, both at baseline and after the 6 weeks diet, while controlling for baseline variables.
 What do vars mean
 datatypes, units, values
 What is the dependent class variable
+
+## Introduction
 
 ## Research question
 Can the peak eosinophil baseline in individuals with eosinophilic oesophagitis be predicted with classical machine learning using the measured nutrient intake data?
 
 ## Missing data
 Missing columns TODO
-37 empty rows
-180 empty columns 
+There are quite a bit of missing attributes and missing values in this data set. Luckily there are plenty of attributes that do have data from where the machine learning algorithm can make its prediction.
+
+37 empty instances
+180 empty attributes 
 Lots of columns with more then 70 % missing values
-```{r}
+```{r echo=FALSE, cache=FALSE, results=TRUE, warning=FALSE, comment=FALSE, warning=FALSE}
 # http://www.milanor.net/blog/how-to-open-an-spss-file-into-r/
 library(foreign)
 #install.packages("janitor")
@@ -28,14 +35,29 @@ library(janitor)
 #install.packages("memisc")
 library("memisc")
 library("ggplot2")
-dataset_original = read.spss("../data/Datafile compleet 20-03-2020 voor Hanze SET def.sav", to.data.frame=TRUE, use.value.labels=F, reencode=F, use.missings	=F)
+#library("unpivotr")
+dataset_original = read.spss("/home/jimjim/Desktop/Predicting-severity-of-Eosinophile-Oesofagitis-with-machine-learning-/data/Datafile compleet 20-03-2020 voor Hanze SET def.sav", to.data.frame=TRUE, use.value.labels=F, reencode=F, use.missings	=F)
 dataset_no_empty <- remove_empty(dataset_original, which = c("rows", "cols"), quiet = FALSE)
 #sapply(dataset_no_empty, function(x) sum(is.na(x)))[]
 
+# get amount f missing values
+columns.NA <- as.data.frame(colSums(is.na(dataset_no_empty))) # TODO gg plot
+
+# convert to percentage and plot TODO ggplot
+get_percentage <- function(x) return((x/nrow(dataset_no_empty))*100) #TODO fix percentages too high
+columns.NA <- apply(columns.NA, 1, get_percentage)
+names(columns.NA) <- c()
+hist(columns.NA, xlab= "percentage of missing values",ylab = "amount of attributes",  main = "Amount of attributes with missing values", breaks = 40)
+
+
+# remove all attributes with less then 40% na
 dataset_clean <- dataset_no_empty[, which(colMeans(!is.na(dataset_no_empty)) > 0.4)]
 
+# ggplot(dataset_clean, aes(value)) +
+#   geom_density(adjust = 0.5) +
+#   facet_wrap(~variable) + ggtitle( "attributes density")
 ```
-```{r}
+```{r echo=FALSE, cache=FALSE, results=TRUE, warning=FALSE, comment=FALSE, warning=FALSE}
 print("columns removed because too many missing values")
 ncol(dataset_no_empty)- ncol(dataset_clean)
 print("columns romved in total")
@@ -45,18 +67,50 @@ ncol(dataset_clean)
 #colnames(dataset_original)
 library(gridExtra)
 library(grid)
-grid.table(dataset_clean[1,40])
-grid.table(c(colnames(dataset_original), attributes(dataset_original)))
+#grid.table(dataset_clean[1,40])
+#grid.table(c(colnames(dataset_original), attributes(dataset_original)))
 ```
 
 ### distrubution
-```{r}
-logged.dataset <- log2(dataset[26:49])
+Most attributes seem normally distributed how ever their range differ quite significantly so a normalization step might be required other wise the range can bias the machine learning algorithm to specific attributes.
+```{r echo=FALSE, cache=FALSE, results=TRUE, warning=FALSE, comment=FALSE, warning=FALSE}
+# TODO plot main attributes from the abstract
+library(reshape2)
+logged.dataset <- log2(dataset_clean)
 melted.dataset <- melt(logged.dataset)
 
-ggplot(melted.dataset, aes(value)) +
+
+ggplot( melt(dataset_clean[26:37]), aes(value)) +
   geom_density(adjust = 0.5) +
   facet_wrap(~variable) + ggtitle( "attributes density")
-```
 
-## Data
+
+ggplot(melt(logged.dataset[26:37]), aes(value)) +
+  geom_density(adjust = 0.5) +
+  facet_wrap(~variable) + ggtitle( "attributes density logged")
+
+
+#cor(logged.dataset)
+```
+### Normalisation
+This is all attributes compared with no normalization, min-max and scaling normalization. 
+
+```{r echo=FALSE, cache=FALSE, results=TRUE, warning=FALSE, comment=FALSE, warning=FALSE}
+ggplot(data = melt(logged.dataset[26:37]), aes(x=variable,y=value)) + geom_boxplot(outlier.colour="black", outlier.shape=16,outlier.size=2, notch=F) + ggtitle("all atributes not scaled")
+
+#scale the data
+scale_min_max <- function(x){
+  x_min = min(x, na.rm = T)
+  x_max = max(x, na.rm = T)
+  return ((x - x_min) / (x_max - x_min))
+}
+
+# TODO why do those attributes disappear also bepa gone?
+min_max_norm <- as.data.frame(apply(logged.dataset, MARGIN = 2, FUN = scale_min_max))
+scaled_norm <- as.data.frame(scale(logged.dataset))
+# TODO better names
+
+ggplot(data = melt(min_max_norm[26:37]), aes(x=variable,y=value)) + geom_boxplot(outlier.colour="black", outlier.shape=16,outlier.size=2, notch=F) + ggtitle("all atributes min max normalisation")
+ggplot(data = melt(scaled_norm[26:37]), aes(x=variable,y=value)) + geom_boxplot(outlier.colour="black", outlier.shape=16,outlier.size=2, notch=F) + ggtitle("all atributes scaling normalisation")
+
+```
