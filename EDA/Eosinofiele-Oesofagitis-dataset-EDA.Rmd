@@ -76,16 +76,35 @@ Most attributes seem normally distributed how ever their range differ quite sign
 ```{r echo=FALSE, cache=FALSE, results=TRUE, warning=FALSE, comment=FALSE, warning=FALSE}
 # TODO plot main attributes from the abstract
 library(reshape2)
-logged.dataset <- log2(dataset_clean)
+#TODO check this work around to log 0 values
+dataset_clean <- dataset_clean + 0.00001
+# TODO get milk
+# TODO where is the cheese lmao
+dataset_selected <- dataset_clean[c("Neocate", "PeakEosBaseline_Max" ,"Gender","Age","Agegroup","Histological_Response","B.Fat.gr", "B.Sat.fat.gr", "B.PUFAS.gr","B.Protein.gr","B.Phosphorus","B.Zinc","B.vitB12", "B.Folate", "B.Calcium","B.Carbohydrates.gr","B.Linoleicacid.gr")]
+#maybe columns: B.Fat.en.pro
+# folate is natural occuring in food folate acid is added but they serve the same purpose 
+#PUFAS = ploy unsaturated fatty acids
+
+dataset_selected_numeric <- dataset_clean[c("PeakEosBaseline_Max","Age","Agegroup","Histological_Response","B.Fat.gr", "B.Sat.fat.gr", "B.PUFAS.gr","B.Protein.gr","B.Phosphorus","B.Zinc","B.vitB12", "B.Folate", "B.Calcium","B.Carbohydrates.gr","B.Linoleicacid.gr")]
+
+# still 2 empty rows left
+dataset_selected_numeric <- remove_empty(dataset_selected_numeric, which = c("rows", "cols"), quiet = FALSE)
+# row 21 has too many missing values in all B. columns
+dataset_selected_numeric <- dataset_selected_numeric[-21,]
+
+# prevent Inf values after logging
+dataset_selected_numeric <- dataset_selected_numeric+0.000001
+
+logged.dataset <- log2(dataset_selected_numeric)
 melted.dataset <- melt(logged.dataset)
 
 
-ggplot( melt(dataset_clean[26:37]), aes(value)) +
+ggplot( melt(dataset_selected_numeric), aes(value)) +
   geom_density(adjust = 0.5) +
   facet_wrap(~variable) + ggtitle( "attributes density")
 
 
-ggplot(melt(logged.dataset[26:37]), aes(value)) +
+ggplot(melt(logged.dataset), aes(value)) +
   geom_density(adjust = 0.5) +
   facet_wrap(~variable) + ggtitle( "attributes density logged")
 
@@ -96,7 +115,7 @@ ggplot(melt(logged.dataset[26:37]), aes(value)) +
 This is all attributes compared with no normalization, min-max and scaling normalization. 
 
 ```{r echo=FALSE, cache=FALSE, results=TRUE, warning=FALSE, comment=FALSE, warning=FALSE}
-ggplot(data = melt(logged.dataset[26:37]), aes(x=variable,y=value)) + geom_boxplot(outlier.colour="black", outlier.shape=16,outlier.size=2, notch=F) + ggtitle("all atributes not scaled")
+ggplot(data = melt(logged.dataset), aes(x=variable,y=value)) + geom_boxplot(outlier.colour="black", outlier.shape=16,outlier.size=2, notch=F) + ggtitle("all atributes not scaled")
 
 #scale the data
 scale_min_max <- function(x){
@@ -110,7 +129,24 @@ min_max_norm <- as.data.frame(apply(logged.dataset, MARGIN = 2, FUN = scale_min_
 scaled_norm <- as.data.frame(scale(logged.dataset))
 # TODO better names
 
-ggplot(data = melt(min_max_norm[26:37]), aes(x=variable,y=value)) + geom_boxplot(outlier.colour="black", outlier.shape=16,outlier.size=2, notch=F) + ggtitle("all atributes min max normalisation")
-ggplot(data = melt(scaled_norm[26:37]), aes(x=variable,y=value)) + geom_boxplot(outlier.colour="black", outlier.shape=16,outlier.size=2, notch=F) + ggtitle("all atributes scaling normalisation")
+ggplot(data = melt(min_max_norm), aes(x=variable,y=value)) + geom_boxplot(outlier.colour="black", outlier.shape=16,outlier.size=2, notch=F) + ggtitle("all atributes min max normalisation")
+ggplot(data = melt(scaled_norm), aes(x=variable,y=value)) + geom_boxplot(outlier.colour="black", outlier.shape=16,outlier.size=2, notch=F) + ggtitle("all atributes scaling normalisation")
 
+```
+
+```{r echo=FALSE, cache=FALSE, results=TRUE, warning=FALSE, comment=FALSE, warning=FALSE}
+library("ggcorrplot")
+#TODO
+#test <- remove_empty(scaled_norm, which = c("rows", "cols"), quiet = FALSE)
+#
+# TODO better attribute names
+# TODO exclude neocate
+# split the data in 2 because it wont fit in 1 plot
+scaled_norm.1 <- scaled_norm[,1:8]
+# add the first columns because that is PeakEos which is our attribute we want to predict
+scaled_norm.2 <- scaled_norm[,c(1,9:15)]
+cor.data.scaled.1 <- cor(scaled_norm.1)
+cor.data.scaled.2 <- cor(scaled_norm.2)
+ggcorrplot(cor.data.scaled.1,  ggtheme = ggplot2::theme_gray,hc.order = T,lab = T, digits=1) + ggtitle( "correlation matrix of the bones lenght and width")
+ggcorrplot(cor.data.scaled.2,  ggtheme = ggplot2::theme_gray,hc.order = T,lab = T, digits=1) + ggtitle( "correlation matrix of the bones lenght and width")
 ```
