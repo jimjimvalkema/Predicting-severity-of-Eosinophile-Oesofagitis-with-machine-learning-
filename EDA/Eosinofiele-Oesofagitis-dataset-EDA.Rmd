@@ -77,36 +77,36 @@ Most attributes seem normally distributed how ever their range differ quite sign
 # TODO plot main attributes from the abstract
 library(reshape2)
 #TODO check this work around to log 0 values
-dataset_clean <- dataset_clean + 0.00001
+#dataset_clean <- dataset_clean + 0.00001
 # TODO get milk
 # TODO where is the cheese lmao
-dataset_selected <- dataset_clean[c("Neocate", "PeakEosBaseline_Max" ,"Gender","Age","Agegroup","Histological_Response","B.Fat.gr", "B.Sat.fat.gr", "B.PUFAS.gr","B.Protein.gr","B.Phosphorus","B.Zinc","B.vitB12", "B.Folate", "B.Calcium","B.Carbohydrates.gr","B.Linoleicacid.gr")]
+dataset_selected <- dataset_clean[c("PeakEosBaseline_Max","Neocate","B.Fat.gr", "B.Sat.fat.gr", "B.PUFAS.gr","B.Protein.gr","B.Phosphorus","B.Zinc","B.vitB12", "B.Folate", "B.Calcium","B.Carbohydrates.gr","B.Linoleicacid.gr","Age","Agegroup","Gender","Histological_Response")]
 #maybe columns: B.Fat.en.pro
 # folate is natural occuring in food folate acid is added but they serve the same purpose 
 #PUFAS = ploy unsaturated fatty acids
 
-dataset_selected_numeric <- dataset_clean[c("PeakEosBaseline_Max","Age","Agegroup","Histological_Response","B.Fat.gr", "B.Sat.fat.gr", "B.PUFAS.gr","B.Protein.gr","B.Phosphorus","B.Zinc","B.vitB12", "B.Folate", "B.Calcium","B.Carbohydrates.gr","B.Linoleicacid.gr")]
-
 # still 2 empty rows left
-dataset_selected_numeric <- remove_empty(dataset_selected_numeric, which = c("rows", "cols"), quiet = FALSE)
+dataset_selected <- remove_empty(dataset_selected, which = c("rows", "cols"), quiet = FALSE)
 # row 21 has too many missing values in all B. columns
-dataset_selected_numeric <- dataset_selected_numeric[-21,]
+dataset_selected <- dataset_selected[-21,]
 
 # prevent Inf values after logging
-dataset_selected_numeric <- dataset_selected_numeric+0.000001
+dataset_selected[1:13] <- dataset_selected[1:13]+0.000001
 
-logged.dataset <- log2(dataset_selected_numeric)
+logged.dataset <- merge(log2(dataset_selected[1:13]),dataset_selected[14:17])
 melted.dataset <- melt(logged.dataset)
 
 
-ggplot( melt(dataset_selected_numeric), aes(value)) +
+ggplot( melt(dataset_selected[c(1,3:13)]), aes(value)) +
   geom_density(adjust = 0.5) +
-  facet_wrap(~variable) + ggtitle( "attributes density")
+  facet_wrap(~variable) + ggtitle( "attributes density") +
+  scale_x_continuous(limits = c(0, 300))
 
 
-ggplot(melt(logged.dataset), aes(value)) +
+ggplot(melt(logged.dataset[c(1,3:13)]), aes(value)) +
   geom_density(adjust = 0.5) +
-  facet_wrap(~variable) + ggtitle( "attributes density logged")
+  facet_wrap(~variable) + ggtitle( "attributes density logged") +
+  scale_x_continuous(limits = c(2, 12)) 
 
 
 #cor(logged.dataset)
@@ -124,14 +124,24 @@ scale_min_max <- function(x){
   return ((x - x_min) / (x_max - x_min))
 }
 
+# TODO choose between age vs agegroup
+
 # TODO why do those attributes disappear also bepa gone?
 min_max_norm <- as.data.frame(apply(logged.dataset, MARGIN = 2, FUN = scale_min_max))
 scaled_norm <- as.data.frame(scale(logged.dataset))
-# TODO better names
+scaled_norm_not_logged <- as.data.frame(scale(dataset_selected))
+# TODO better titles
 
 ggplot(data = melt(min_max_norm), aes(x=variable,y=value)) + geom_boxplot(outlier.colour="black", outlier.shape=16,outlier.size=2, notch=F) + ggtitle("all atributes min max normalisation")
 ggplot(data = melt(scaled_norm), aes(x=variable,y=value)) + geom_boxplot(outlier.colour="black", outlier.shape=16,outlier.size=2, notch=F) + ggtitle("all atributes scaling normalisation")
 
+ggplot(melt(scaled_norm[c(1,3:13)]), aes(value)) +
+  geom_density(adjust = 0.5) +
+  facet_wrap(~variable) + ggtitle( "attributes density normalised and logged") 
+
+ggplot(melt(scaled_norm_not_logged[c(1,3:13)]), aes(value)) +
+  geom_density(adjust = 0.5) +
+  facet_wrap(~variable) + ggtitle( "attributes density normalised not logged") 
 ```
 
 ```{r echo=FALSE, cache=FALSE, results=TRUE, warning=FALSE, comment=FALSE, warning=FALSE}
@@ -144,9 +154,20 @@ library("ggcorrplot")
 # split the data in 2 because it wont fit in 1 plot
 scaled_norm.1 <- scaled_norm[,1:8]
 # add the first columns because that is PeakEos which is our attribute we want to predict
-scaled_norm.2 <- scaled_norm[,c(1,9:15)]
+scaled_norm.2 <- scaled_norm[,c(1,9:17)]
 cor.data.scaled.1 <- cor(scaled_norm.1)
 cor.data.scaled.2 <- cor(scaled_norm.2)
 ggcorrplot(cor.data.scaled.1,  ggtheme = ggplot2::theme_gray,hc.order = T,lab = T, digits=1) + ggtitle( "correlation matrix of the bones lenght and width")
 ggcorrplot(cor.data.scaled.2,  ggtheme = ggplot2::theme_gray,hc.order = T,lab = T, digits=1) + ggtitle( "correlation matrix of the bones lenght and width")
+#TODO check if histological response
 ```
+
+```{r echo=FALSE, cache=FALSE, results=TRUE, warning=FALSE, comment=FALSE, warning=FALSE}
+
+
+```
+## quality metrics
+The most important metric to optimise for is the sensistivity a false positive case is less harmfull then a false negative case. This is because a patient that is clasified as sick but turns out to be healthy after further inspection, experiences far less harm then those who are clasified as healthy but continue suffering from symptoms.  
+
+The algorithm should be able to run with
+

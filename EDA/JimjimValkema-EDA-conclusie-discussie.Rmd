@@ -1,6 +1,8 @@
 ---
 title: "JimjimValkema-EDA-conclusie-discussie"
-output: pdf_document
+output:
+  html_document:
+    df_print: paged
 ---
 
 ---
@@ -18,11 +20,11 @@ The ranges of different attributes are quite significant (fig 2) so the data nee
 It is found that scaling by the standard deviation would be the most effective method for normalization (fig 3) for a future proof machine learning model. This is because this type of normalization can handle data that falls outside of the range of the training data set. Unlike min max normalization which fails in this regard. 
 It is important that the end product can handle these ranges because the training data set has only a few instances and therefore might not contain the entire range of values for each attribute.
 The data also benefits from a log2 transformation because it seems to be more normal distributed this way (fig 4 & 5).
-Most attributes that were mentioned by the previous study are not correlated with each other (fig 6 & 7). Which could be an indication that they contain a good amount of information for the machine algorithm to train on.
+Most attributes that were mentioned by the previous study are not correlated with each other (fig 6 & 7). Which could be an indication that they contain a good amount of information for the machine algorithm to train on. TODO 6wk
 
 ## discussion
 There only a few of the many attributes that are looked at in this study. These attributes were picked based on the findings of the previous study. This is because of time limitations however it could be interesting to look at the rest of the data with more time efficient techniques and tools. However the final product can't have too many attributes as its input because that would be too cumbersome to use and most machine learning algorithms would probably benefit much from this many attributes. 
-There are also a fair amount of missing values removed which might still be valuable because a missing value on its own can also convey information in some cases.
+There are also a fair amount of missing values removed which might still be valuable because a missing value on its own can also convey information in some cases. TODO explain why scaling TODO why select certain features
 
 ```{r include=FALSE, echo=FALSE, cache=FALSE, results=FALSE, warning=FALSE, comment=FALSE, warning=FALSE}
 # http://www.milanor.net/blog/how-to-open-an-spss-file-into-r/
@@ -45,6 +47,8 @@ get_percentage <- function(x) return((x/nrow(dataset_no_empty))*100) #TODO fix p
 columns.NA <- apply(columns.NA, 1, get_percentage)
 names(columns.NA) <- c()
 ```
+   
+    
 ```{r include=T, echo=FALSE, cache=FALSE, results=FALSE, warning=FALSE, comment=FALSE, warning=FALSE}
 hist(columns.NA, xlab= "percentage of missing values",ylab = "amount of attributes",  main = "Amount of attributes with missing values", breaks = 40)
 # remove all attributes with less then data
@@ -54,9 +58,12 @@ dataset_clean <- dataset_no_empty[, which(colMeans(!is.na(dataset_no_empty)) > 0
 #   geom_density(adjust = 0.5) +
 #   facet_wrap(~variable) + ggtitle( "attributes density")
 ```
+  
 *Fig 1: The amount of attributes on the y axis and the percentage of missing values these attributes have. This figure shows that a lot of attributes has below 20% missing but most notably are those with around 60% missing.*
 
 ```{r include=FALSE, echo=FALSE, cache=FALSE, results=TRUE, warning=FALSE, comment=FALSE, warning=FALSE}
+# TODO dont normalize PeakEos
+# TODO remove y values
 print("columns removed because too many missing values")
 ncol(dataset_no_empty)- ncol(dataset_clean)
 print("columns removed in total")
@@ -101,7 +108,7 @@ melted.dataset <- melt(logged.dataset)
 ggplot(data = melt(logged.dataset), aes(x=variable,y=value)) + geom_boxplot(outlier.colour="black", outlier.shape=16,outlier.size=2, notch=F) + ggtitle("all atributes not scaled")
 
 ```
-*Figure 2: Shows the selected attributes distributions. Note that the range differ significantly which can interfere with most machine learning algorithms.*
+*Figure 2: Shows the selected attributes distributions. The range differ significantly which can interfere with most machine learning algorithms.*
 
 ```{r echo=FALSE, cache=FALSE, results=TRUE, warning=FALSE, comment=FALSE, warning=FALSE}
 #scale the data
@@ -155,5 +162,6 @@ cor.data.scaled.1 <- cor(scaled_norm.1)
 cor.data.scaled.2 <- cor(scaled_norm.2)
 ggcorrplot(cor.data.scaled.1,  ggtheme = ggplot2::theme_gray,hc.order = T,lab = T, digits=1) + ggtitle( "correlation matrix of the bones lenght and width")
 ggcorrplot(cor.data.scaled.2,  ggtheme = ggplot2::theme_gray,hc.order = T,lab = T, digits=1) + ggtitle( "correlation matrix of the bones lenght and width")
-```
+```  
+
 *Figure 6 & 7: show the correlation between attributes. It seems that the majority isn't highly correlated which might be a good indication that there is enough information between attributes for the algorithm to train on.*
