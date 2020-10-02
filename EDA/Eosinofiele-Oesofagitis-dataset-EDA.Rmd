@@ -28,6 +28,8 @@ There are quite a bit of missing attributes and missing values in this data set.
 180 empty attributes 
 Lots of columns with more then 70 % missing values
 ```{r echo=FALSE, cache=FALSE, results=TRUE, warning=FALSE, comment=FALSE, warning=FALSE}
+library("ggpubr")
+
 # http://www.milanor.net/blog/how-to-open-an-spss-file-into-r/
 library(foreign)
 #install.packages("janitor")
@@ -36,7 +38,7 @@ library(janitor)
 library("memisc")
 library("ggplot2")
 #library("unpivotr")
-dataset_original = read.spss("/home/jimjim/Desktop/Predicting-severity-of-Eosinophile-Oesofagitis-with-machine-learning-/data/Datafile compleet 20-03-2020 voor Hanze SET def.sav", to.data.frame=TRUE, use.value.labels=F, reencode=F, use.missings	=F)
+dataset_original = read.spss("../data/Datafile compleet 20-03-2020 voor Hanze SET def.sav", to.data.frame=TRUE, use.value.labels=F, reencode=F, use.missings	=F)
 dataset_no_empty <- remove_empty(dataset_original, which = c("rows", "cols"), quiet = FALSE)
 #sapply(dataset_no_empty, function(x) sum(is.na(x)))[]
 
@@ -80,7 +82,7 @@ library(reshape2)
 #dataset_clean <- dataset_clean + 0.00001
 # TODO get milk
 # TODO where is the cheese lmao
-dataset_selected <- dataset_clean[c("PeakEosBaseline_Max","Neocate","B.Fat.gr", "B.Sat.fat.gr", "B.PUFAS.gr","B.Protein.gr","B.Phosphorus","B.Zinc","B.vitB12", "B.Folate", "B.Calcium","B.Carbohydrates.gr","B.Linoleicacid.gr","Age","Agegroup","Gender","Histological_Response")]
+dataset_selected <- dataset_clean[c("PeakEosBaseline_Max","B.Fat.gr", "B.Sat.fat.gr", "B.PUFAS.gr","B.Protein.gr","B.Phosphorus","B.Zinc","B.vitB12", "B.Folate", "B.Calcium","B.Carbohydrates.gr","B.Linoleicacid.gr","Age","Agegroup","Gender","Histological_Response","Neocate")]
 #maybe columns: B.Fat.en.pro
 # folate is natural occuring in food folate acid is added but they serve the same purpose 
 #PUFAS = ploy unsaturated fatty acids
@@ -91,22 +93,23 @@ dataset_selected <- remove_empty(dataset_selected, which = c("rows", "cols"), qu
 dataset_selected <- dataset_selected[-21,]
 
 # prevent Inf values after logging
-dataset_selected[1:13] <- dataset_selected[1:13]+0.000001
+dataset_selected[1:12] <- dataset_selected[1:12]+0.000001
 
-logged.dataset <- merge(log2(dataset_selected[1:13]),dataset_selected[14:17])
+nrow(dataset_selected)
+logged.dataset <- cbind(log2(dataset_selected[1:12]),dataset_selected[13:17], by="pid")
 melted.dataset <- melt(logged.dataset)
+nrow(logged.dataset)
 
-
-ggplot( melt(dataset_selected[c(1,3:13)]), aes(value)) +
+ggplot( melt(dataset_selected[c(1:12)]), aes(value)) +
   geom_density(adjust = 0.5) +
   facet_wrap(~variable) + ggtitle( "attributes density") +
-  scale_x_continuous(limits = c(0, 300))
+  scale_x_continuous(limits = c(0, 300)) + theme_pubr()
 
 
-ggplot(melt(logged.dataset[c(1,3:13)]), aes(value)) +
+ggplot(melt(logged.dataset[c(1:12)]), aes(value)) +
   geom_density(adjust = 0.5) +
   facet_wrap(~variable) + ggtitle( "attributes density logged") +
-  scale_x_continuous(limits = c(2, 12)) 
+  scale_x_continuous(limits = c(2, 12))  + theme_pubr()
 
 
 #cor(logged.dataset)
@@ -115,7 +118,7 @@ ggplot(melt(logged.dataset[c(1,3:13)]), aes(value)) +
 This is all attributes compared with no normalization, min-max and scaling normalization. 
 
 ```{r echo=FALSE, cache=FALSE, results=TRUE, warning=FALSE, comment=FALSE, warning=FALSE}
-ggplot(data = melt(logged.dataset), aes(x=variable,y=value)) + geom_boxplot(outlier.colour="black", outlier.shape=16,outlier.size=2, notch=F) + ggtitle("all atributes not scaled")
+ggplot(data = melt(logged.dataset[1:12]), aes(x=variable,y=value)) + geom_boxplot(outlier.colour="black", outlier.shape=16,outlier.size=2, notch=F) + ggtitle("all atributes not scaled")
 
 #scale the data
 scale_min_max <- function(x){
@@ -126,22 +129,21 @@ scale_min_max <- function(x){
 
 # TODO choose between age vs agegroup
 
-# TODO why do those attributes disappear also bepa gone?
-min_max_norm <- as.data.frame(apply(logged.dataset, MARGIN = 2, FUN = scale_min_max))
-scaled_norm <- as.data.frame(scale(logged.dataset))
-scaled_norm_not_logged <- as.data.frame(scale(dataset_selected))
+min_max_norm <- cbind(apply(logged.dataset[1:12], MARGIN = 2, FUN = scale_min_max),logged.dataset[13:17])
+scaled_norm <- cbind(scale(logged.dataset[1:12]),logged.dataset[13:17])
+scaled_norm_not_logged <- cbind(scale(dataset_selected[1:12]),dataset_selected[13:17])
 # TODO better titles
 
-ggplot(data = melt(min_max_norm), aes(x=variable,y=value)) + geom_boxplot(outlier.colour="black", outlier.shape=16,outlier.size=2, notch=F) + ggtitle("all atributes min max normalisation")
-ggplot(data = melt(scaled_norm), aes(x=variable,y=value)) + geom_boxplot(outlier.colour="black", outlier.shape=16,outlier.size=2, notch=F) + ggtitle("all atributes scaling normalisation")
+ggplot(data = melt(min_max_norm[1:12]), aes(x=variable,y=value)) + geom_boxplot(outlier.colour="black", outlier.shape=16,outlier.size=2, notch=F) + ggtitle("all atributes min max normalisation")+ theme_pubr()
+ggplot(data = melt(scaled_norm[1:12]), aes(x=variable,y=value)) + geom_boxplot(outlier.colour="black", outlier.shape=16,outlier.size=2, notch=F) + ggtitle("all atributes scaling normalisation")+ theme_pubr()
 
-ggplot(melt(scaled_norm[c(1,3:13)]), aes(value)) +
+ggplot(melt(scaled_norm[c(1:12)]), aes(value)) +
   geom_density(adjust = 0.5) +
-  facet_wrap(~variable) + ggtitle( "attributes density normalised and logged") 
+  facet_wrap(~variable) + ggtitle( "attributes density normalised and logged") + theme_pubr()
 
-ggplot(melt(scaled_norm_not_logged[c(1,3:13)]), aes(value)) +
+ggplot(melt(scaled_norm_not_logged[c(1:12)]), aes(value)) +
   geom_density(adjust = 0.5) +
-  facet_wrap(~variable) + ggtitle( "attributes density normalised not logged") 
+  facet_wrap(~variable) + ggtitle( "attributes density normalised not logged")  + theme_pubr()
 ```
 
 ```{r echo=FALSE, cache=FALSE, results=TRUE, warning=FALSE, comment=FALSE, warning=FALSE}
@@ -157,17 +159,32 @@ scaled_norm.1 <- scaled_norm[,1:8]
 scaled_norm.2 <- scaled_norm[,c(1,9:17)]
 cor.data.scaled.1 <- cor(scaled_norm.1)
 cor.data.scaled.2 <- cor(scaled_norm.2)
-ggcorrplot(cor.data.scaled.1,  ggtheme = ggplot2::theme_gray,hc.order = T,lab = T, digits=1) + ggtitle( "correlation matrix of the bones lenght and width")
-ggcorrplot(cor.data.scaled.2,  ggtheme = ggplot2::theme_gray,hc.order = T,lab = T, digits=1) + ggtitle( "correlation matrix of the bones lenght and width")
+ggcorrplot(cor.data.scaled.1,  ggtheme = ggplot2::theme_gray,hc.order = T,lab = T, digits=1) + ggtitle( "correlation matrix of the bones lenght and width") #+ theme_pubr()
+ggcorrplot(cor.data.scaled.2,  ggtheme = ggplot2::theme_gray,hc.order = T,lab = T, digits=1) + ggtitle( "correlation matrix of the bones lenght and width") #+ theme_pubr()
 #TODO check if histological response
 ```
 
 ```{r echo=FALSE, cache=FALSE, results=TRUE, warning=FALSE, comment=FALSE, warning=FALSE}
+factor_columns <- c("Gender","Histological_Response","Neocate")
+#scaled_norm[,factor_columns] <- as.factor(as.character(scaled_norm[,factor_columns]))
 
+peak.eos.max <- remove_empty(dataset_clean[23], which = c("rows", "cols"), quiet = FALSE)
 
+ggplot(melt(peak.eos.max), aes(value)) +
+  geom_histogram(adjust = 0.5, bins = 40) +
+  facet_wrap(~variable) + ggtitle( "attributes density normalised not logged") + theme_pubr()
+
+scaled_norm$PeakEosBaseline_Max <- cut(as.matrix(peak.eos.max), breaks = c(0,49,75,200), labels = c("low","mid","high"))[-21]
+# TODO check if the gender is correct
+scaled_norm$Gender <- cut(as.matrix(scaled_norm$Gender), breaks = c(-1,0,1), labels = c("male","female"))
+scaled_norm$Histological_Response <- cut(as.matrix(scaled_norm$Histological_Response), breaks = c(-1,0,1,2), labels = c("1st","2nd","3rd"))
+scaled_norm$Neocate <- cut(as.matrix(scaled_norm$Neocate), breaks = c(-1,0,1), labels = c("no response","response"))
+write.csv(scaled_norm,"../data/selected_data_logged_scaled.csv", row.names = FALSE)
+
+summary(scaled_norm$PeakEosBaseline_Max)
 ```
 ## quality metrics
 The most important metric to optimise for is the sensistivity a false positive case is less harmfull then a false negative case. This is because a patient that is clasified as sick but turns out to be healthy after further inspection, experiences far less harm then those who are clasified as healthy but continue suffering from symptoms.  
 
-The algorithm should be able to run with
+The algorithm should be able to run on a consumer desktop and but doesn't need to be too fast when classefying. This because it is likly that only one patient will be avaluated at the time so accuracy is far more important then speed.
 
