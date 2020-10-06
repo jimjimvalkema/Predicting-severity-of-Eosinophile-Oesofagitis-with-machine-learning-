@@ -3,9 +3,9 @@ title: "Eosinofiele Oesofagitis dataset EDA"
 author: "Jim Jim Valkema"
 date: "9/8/2020"
 output:
-  pdf_document: default
   html_document:
     df_print: paged
+  pdf_document: default
 ---
 
 ## Dataset
@@ -163,6 +163,11 @@ ggcorrplot(cor.data.scaled.1,  ggtheme = ggplot2::theme_gray,hc.order = T,lab = 
 ggcorrplot(cor.data.scaled.2,  ggtheme = ggplot2::theme_gray,hc.order = T,lab = T, digits=1) + ggtitle( "correlation matrix of the bones lenght and width") #+ theme_pubr()
 #TODO check if histological response
 ```
+### splitting Peak eos baseline max into catagories
+The Peak eos baseline max needs to be split into catagories because most classical machine learning algorithms cant use a numerical dependent class variable. The Peak eos baseline max is split into three catagories: low, mid, high split at 0-49, 49-75, 75-200. This seems to create a a most even distrubution of instances while also being informative. It could be split into more catagories but this would make it harder to create a machine learining model with high accuracy.
+
+TODO weights
+
 
 ```{r echo=FALSE, cache=FALSE, results=TRUE, warning=FALSE, comment=FALSE, warning=FALSE}
 factor_columns <- c("Gender","Histological_Response","Neocate")
@@ -186,5 +191,65 @@ summary(scaled_norm$PeakEosBaseline_Max)
 ## quality metrics
 The most important metric to optimise for is the sensistivity a false positive case is less harmfull then a false negative case. This is because a patient that is clasified as sick but turns out to be healthy after further inspection, experiences far less harm then those who are clasified as healthy but continue suffering from symptoms.  
 
-The algorithm should be able to run on a consumer desktop and but doesn't need to be too fast when classefying. This because it is likly that only one patient will be avaluated at the time so accuracy is far more important then speed.
+The algorithm should be able to run on a consumer desktop and but doesn't need to be too fast when classefying. This because it is likely that only one patient will be avaluated at the time so accuracy is far more important then speed.
 
+
+## model evaluatio 
+```{r}
+library(knitr)
+library(plyr)
+
+weka.results <- read.csv("../data/results/results_attribute_selection_selected_data_logged_scaled.csv")
+confusion.df <- data.frame()
+for (algo.df in split.data.frame(weka.results,weka.results$Key_Scheme))
+  {
+  for (run.df in split.data.frame(algo.df,algo.df$Key_Run)) {
+        new.row <- data.frame(
+          Key_Fold = run.df$Key_Fold,
+          Key.run = run.df$Key_Run[1]
+          ,algo = run.df$Key_Scheme[1]
+          ,acc = mean(run.df$Percent_correct)
+          ,speed_test = mean(run.df$UserCPU_Time_testing)
+          ,speed_train = mean(run.df$UserCPU_Time_training)
+          ,TP = median(run.df$Num_true_positives)
+          ,TN = median(run.df$Num_true_negatives)
+          ,FP = median(run.df$Num_false_positives)
+          ,FN = median(run.df$Num_false_negatives)
+          ,Key_Dataset = run.df$Key_Dataset
+          )
+        confusion.df <- rbind(confusion.df,new.row)
+    }
+}
+
+confusion.df[,2] <- revalue(confusion.df[,2],
+                            c("weka.classifiers.bayes.NaiveBayes"="NaiveBayes"
+                              ,"weka.classifiers.functions.Logistic"="Logistic"
+                              ,"weka.classifiers.lazy.IBk"="IBk"
+                              ,"weka.classifiers.rules.OneR"="OneR"
+                              ,"weka.classifiers.rules.ZeroR"="ZeroR"
+                              ,"weka.classifiers.trees.J48"="J48"
+                              ,"weka.classifiers.trees.RandomForest"= "RandomForest"))
+
+for (fold.df in split.data.frame(confusion.df,confusion.df$Key_Fold)) {
+        new.row <- data.frame(
+          Key.run = fold.df$Key_Run[1]
+          ,algo = fold.df$Key_Scheme[1]
+          ,acc = mean(fold.df$Percent_correct)
+          ,speed_test = mean(fold.df$UserCPU_Time_testing)
+          ,speed_train = mean(fold.df$UserCPU_Time_training)
+          ,TP = median(fold.df$Num_true_positives)
+          ,TN = median(fold.df$Num_true_negatives)
+          ,FP = median(fold.df$Num_false_positives)
+          ,FN = median(fold.df$Num_false_negatives)
+          ,Key_Dataset = fold.df$Key_Dataset
+          )
+        confusion.folds.df <- rbind(confusion.folds.df,new.row)
+    }
+
+for (dataset in split.data.frame(confusion.df,confusion.df$Key_Dataset)){
+  dataset 
+  print(kable(dataset))
+  cat("\n")
+  }
+
+```
