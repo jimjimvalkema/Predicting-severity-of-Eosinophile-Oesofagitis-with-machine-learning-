@@ -194,62 +194,71 @@ The most important metric to optimise for is the sensistivity a false positive c
 The algorithm should be able to run on a consumer desktop and but doesn't need to be too fast when classefying. This because it is likely that only one patient will be avaluated at the time so accuracy is far more important then speed.
 
 
-## model evaluatio 
-```{r}
-library(knitr)
-library(plyr)
+## model evaluation
+j48 all: 28.2051% acc
 
+j48 cfs subset eval: 38.4615
+weka.attributeSelection.ClassifierSubsetEval -B Evaluator:    weka.attributeSelection.ClassifierSubsetEval -B weka.classifiers.trees.J48 -T -H "Click to set hold out or test instances" -E DEFAULT -- -C 0.25 -M 2
+Search:       weka.attributeSelection.GreedyStepwise -T -1.7976931348623157E308 -N -1 -num-slots 1
+
+j48 ClassifierAttributeEval + ranker:
+top 7: 35.8974
+top 6: 30.7692
+top 5: 33.3333
+top 4: 33.3333
+
+Evaluator:    weka.attributeSelection.ClassifierAttributeEval -execution-slots 1 -B weka.classifiers.trees.J48 -F 5 -T 0.01 -R 1 -E DEFAULT -- -C 0.25 -M 2
+Search:       weka.attributeSelection.Ranker -T -1.7976931348623157E308 -N -1
+
+j48 ClassifierAttributeEval + ranker leave one out:
+top 7: 33.3333
+top 6: 33.3333 
+top 5: 35.8974
+top 4: 43.5897
+
+Evaluator:    weka.attributeSelection.ClassifierAttributeEval -L -execution-slots 1 -B weka.classifiers.trees.J48 -F 5 -T 0.01 -R 1 -E DEFAULT -- -C 0.25 -M 2
+Search:       weka.attributeSelection.Ranker -T -1.7976931348623157E308 -N -1
+
+
+```{r}
 weka.results <- read.csv("../data/results/results_attribute_selection_selected_data_logged_scaled.csv")
-confusion.df <- data.frame()
-for (algo.df in split.data.frame(weka.results,weka.results$Key_Scheme))
-  {
-  for (run.df in split.data.frame(algo.df,algo.df$Key_Run)) {
-        new.row <- data.frame(
-          Key_Fold = run.df$Key_Fold,
-          Key.run = run.df$Key_Run[1]
-          ,algo = run.df$Key_Scheme[1]
-          ,acc = mean(run.df$Percent_correct)
-          ,speed_test = mean(run.df$UserCPU_Time_testing)
-          ,speed_train = mean(run.df$UserCPU_Time_training)
-          ,TP = median(run.df$Num_true_positives)
-          ,TN = median(run.df$Num_true_negatives)
-          ,FP = median(run.df$Num_false_positives)
-          ,FN = median(run.df$Num_false_negatives)
-          ,Key_Dataset = run.df$Key_Dataset
-          )
-        confusion.df <- rbind(confusion.df,new.row)
+
+confusion.df.all <- data.frame()
+
+for (dataset.df in split.data.frame(weka.results,weka.results$Key_Dataset)) {
+  for (algo.df in split.data.frame(dataset.df,dataset.df$Key_Scheme)) {
+    for (options.df in split.data.frame(algo.df,algo.df$Key_Scheme_options)) {
+      new.row <- data.frame(
+            algo = algo.df$Key_Scheme[1]
+            ,key.dataset = algo.df$Key_Dataset[1]
+            ,acc = mean(algo.df$Percent_correct)
+            ,speed_test = mean(algo.df$UserCPU_Time_testing)
+            ,speed_train = mean(algo.df$UserCPU_Time_training)
+            ,TP = median(algo.df$Num_true_positives)
+            ,TN = median(algo.df$Num_true_negatives)
+            ,FP = median(algo.df$Num_false_positives)
+            ,FN = median(algo.df$Num_false_negatives)
+            )
+      
+          confusion.df.all <- rbind(confusion.df.all,new.row)
     }
+  }
 }
 
-confusion.df[,2] <- revalue(confusion.df[,2],
-                            c("weka.classifiers.bayes.NaiveBayes"="NaiveBayes"
-                              ,"weka.classifiers.functions.Logistic"="Logistic"
-                              ,"weka.classifiers.lazy.IBk"="IBk"
-                              ,"weka.classifiers.rules.OneR"="OneR"
-                              ,"weka.classifiers.rules.ZeroR"="ZeroR"
-                              ,"weka.classifiers.trees.J48"="J48"
-                              ,"weka.classifiers.trees.RandomForest"= "RandomForest"))
+confusion.df.all
 
-for (fold.df in split.data.frame(confusion.df,confusion.df$Key_Fold)) {
-        new.row <- data.frame(
-          Key.run = fold.df$Key_Run[1]
-          ,algo = fold.df$Key_Scheme[1]
-          ,acc = mean(fold.df$Percent_correct)
-          ,speed_test = mean(fold.df$UserCPU_Time_testing)
-          ,speed_train = mean(fold.df$UserCPU_Time_training)
-          ,TP = median(fold.df$Num_true_positives)
-          ,TN = median(fold.df$Num_true_negatives)
-          ,FP = median(fold.df$Num_false_positives)
-          ,FN = median(fold.df$Num_false_negatives)
-          ,Key_Dataset = fold.df$Key_Dataset
-          )
-        confusion.folds.df <- rbind(confusion.folds.df,new.row)
-    }
+for (dataset.df in split.data.frame(confusion.df.all,confusion.df.all$key.dataset)) {
+  print(dataset.df)
+}
+```
 
-for (dataset in split.data.frame(confusion.df,confusion.df$Key_Dataset)){
-  dataset 
-  print(kable(dataset))
-  cat("\n")
-  }
+```{r}
+dataset_clean <- dataset_clean[-c(21,39,40), ]
+dataset_clean$PeakEosBaseline_Max <- cut(as.matrix(peak.eos.max), breaks = c(0,49,75,200), labels = c("low","mid","high"))[-21]
+#logged.dataset.full <- cbind(log2(dataset_clean[1:12]),dataset_clean[13:17], by="pid")
+dataset_clean
+```
 
+```{r}
+write.csv(dataset_clean,"../data/cleaned-data-all-no-scaling-and-norm.csv", row.names = FALSE)
 ```
