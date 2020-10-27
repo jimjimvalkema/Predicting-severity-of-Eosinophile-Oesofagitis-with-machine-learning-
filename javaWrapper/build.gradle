@@ -1,0 +1,32 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.github.jengelman.gradle.plugins:shadow:5.1.0'
+    }
+}
+
+apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'java'
+sourceCompatibility = JavaVersion.VERSION_11
+group 'nl.bioinf.jjvalkema'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // https://mvnrepository.com/artifact/nz.ac.waikato.cms.weka/weka-stable
+    compile group: 'nz.ac.waikato.cms.weka', name: 'weka-stable', version: '3.8.0'
+    // https://mvnrepository.com/artifact/commons-cli/commons-cli
+    compile group: 'commons-cli', name: 'commons-cli', version: '1.4'
+
+}
+
+jar {
+    manifest {
+        attributes "Main-Class": "WekaJavaWrapper.WekaWrapperRunner"
+    }
+}
