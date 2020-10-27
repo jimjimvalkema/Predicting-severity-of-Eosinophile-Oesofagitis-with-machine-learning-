@@ -229,15 +229,16 @@ for (dataset.df in split.data.frame(weka.results,weka.results$Key_Dataset)) {
   for (algo.df in split.data.frame(dataset.df,dataset.df$Key_Scheme)) {
     for (options.df in split.data.frame(algo.df,algo.df$Key_Scheme_options)) {
       new.row <- data.frame(
-            algo = algo.df$Key_Scheme[1]
-            ,key.dataset = algo.df$Key_Dataset[1]
-            ,acc = mean(algo.df$Percent_correct)
-            ,speed_test = mean(algo.df$UserCPU_Time_testing)
-            ,speed_train = mean(algo.df$UserCPU_Time_training)
-            ,TP = median(algo.df$Num_true_positives)
-            ,TN = median(algo.df$Num_true_negatives)
-            ,FP = median(algo.df$Num_false_positives)
-            ,FN = median(algo.df$Num_false_negatives)
+            algo = options.df$Key_Scheme[1]
+            ,key.dataset = options.df$Key_Dataset[1]
+            ,acc = mean(options.df$Percent_correct)
+            ,speed_test = mean(options.df$UserCPU_Time_testing)
+            ,speed_train = mean(options.df$UserCPU_Time_training)
+            ,TP = median(options.df$Num_true_positives)
+            ,TN = median(options.df$Num_true_negatives)
+            ,FP = median(options.df$Num_false_positives)
+            ,FN = median(options.df$Num_false_negatives)
+            ,key.scheme_options = options.df$Key_Scheme_options[1]
             )
       
           confusion.df.all <- rbind(confusion.df.all,new.row)
@@ -261,4 +262,8 @@ dataset_clean
 
 ```{r}
 write.csv(dataset_clean,"../data/cleaned-data-all-no-scaling-and-norm.csv", row.names = FALSE)
+
+# get averages 
+j48_cfs_eval_attribute <- c("B.PUFAS.gr","B.Calcium","B.Carbohydrates.gr","B.Linoleicacid","gr,Gender","Neocate","PeakEosBaseline_Max")
+dataset_clean[c("B.Linoleicacid","gr,Gender","Neocate","PeakEosBaseline_Max")]
 ```
