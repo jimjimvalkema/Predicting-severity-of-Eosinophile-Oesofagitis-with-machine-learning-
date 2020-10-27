@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Jimjim Valkema
+ * Copyright (c) 2020 Jimjim Valkema
  * All rights reserved
  */
 
@@ -35,12 +35,18 @@ public class WekaWrapperRunner {
     //TODO print statistics
     //TODO print probability
     //TODO versioning
+
+    //TODO putt normalisation functions in a separate class
+
+    //TODO change to new model and class labels
     private final String modelFile = "MetaStackingMaxDepth12.model";
     public final String classLabels = "SW,W,T,R,P,SO";
+    //TODO get new means and sds
     public final static double[] means = {64.87487,4.381235,69.19741,3.606538,36.82245,3.221768,64.61564,3.182324,39.30981,2.944891};
     public final static double[] sd = {54.05608,2.86146,58.92949,2.19015,19.89936,2.021169,37.97793,2.084124,23.2727,2.194744};
 
     public static void main(String[] args) {
+        //TODO get new heade possibly from a file since it is long
         String header = "\"huml\",\"humw\",\"ulnal\",\"ulnaw\",\"feml\",\"femw\",\"tibl\",\"tibw\",\"tarl\",\"tarw\"";
 
         try {
@@ -50,7 +56,7 @@ public class WekaWrapperRunner {
                 return;
             } else {
                 WekaWrapperRunner runner = new WekaWrapperRunner();
-                String normalizedCsv = "testdata/BirdsLogged_unclassified_normalised.csv";
+                String normalizedCsv = "testdata/unclassified_normalised_data.csv";
 
                 //normalise from either the terminal or CSV and store the output into a csv
                 if (op.instanceProvided()) {
@@ -62,7 +68,6 @@ public class WekaWrapperRunner {
                     String inputFile = op.getInputfile();
                     createNormArffFromFile(inputFile,normalizedCsv,means,sd,header);
                     System.out.println("classifying instance from CSV");
-                    //runner.createNormCsvFromFile(inputFile, normalizedCsv, header);
                 }
                 runner.classifyCsv(normalizedCsv);
             }
@@ -198,6 +203,8 @@ public class WekaWrapperRunner {
     private static String[] normalizeInstance(String instance, double[] means, double[] sd) throws NumberFormatException {
         double[] validInstance = getValidInstance(instance);
         double res;
+
+        //TODO some instances are not numerical and can't / need to be normalised
         String[] normalizedInstance = new String[10];
             for (int i = 0; i < validInstance.length; i ++) {
                 res = log2(validInstance[i]);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Michiel Noback
+ * Copyright (c) 2020 Jimjim Valkema
  * All rights reserved
  * www.bioinf.nl, www.cellingo.net
  */
@@ -19,7 +19,6 @@ import java.io.FileNotFoundException;
 /**
  * This class implements the OptionsProvider interface by parsing the passed command line arguments.
  *
- * @author michiel
  */
 public class ApacheCliOptionsProvider {
     private static final String HELP = "help";
@@ -30,7 +29,6 @@ public class ApacheCliOptionsProvider {
     private final String[] clArguments;
     private Options options;
     private CommandLine commandLine;
-    private int age;
 
     /**
      * constructs with the command line array.
@@ -94,7 +92,7 @@ public class ApacheCliOptionsProvider {
                     int i = Integer.parseInt(s);
                     int levelindex = Integer.parseInt(commandLine.getOptionValue(VERBOSITY).trim());
                 } else {
-                    throw new IllegalArgumentException("Verbosity argument is ot legal: \"" + s + "\"");
+                    throw new IllegalArgumentException("Verbosity argument is not legal: \"" + s + "\"");
                 }
             } else {
             }
@@ -124,6 +122,7 @@ public class ApacheCliOptionsProvider {
      * prints help.
      */
     public void printHelp() {
+        //TODO number of classes wil be different
         HelpFormatter formatter = new HelpFormatter();
         formatter.printHelp(
                 "javaWrapper-1.0-SNAPSHOT-all.jar -f inputfile.csv or \n" +
