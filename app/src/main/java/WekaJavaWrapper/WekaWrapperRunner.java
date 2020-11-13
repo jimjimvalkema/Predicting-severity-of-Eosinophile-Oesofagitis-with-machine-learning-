@@ -13,10 +13,12 @@ import weka.filters.unsupervised.attribute.Add;
 import weka.core.converters.ConverterUtils;
 
 import java.io.*;
+import java.lang.reflect.Array;
 import java.util.*;
 import java.io.IOException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.ArrayList;
 
 public class WekaWrapperRunner {
     //private static final Logger log = Logger.getLogger(WekaWrapperRunner.class.getName());
@@ -234,14 +236,19 @@ public class WekaWrapperRunner {
 
         //TODO some instances are not numerical and can't / need to be normalised
         List<String> normalizedInstanceList = new ArrayList<String>();
-        String[] normalizedInstance = new String[4];
-            for (int i = 0; i < validInstance.length - 2; i ++) {
+        //String[] normalizedInstance = new String[4];
+        for (int i = 0; i < validInstance.length - 2; i ++) {
                 res = log2(validInstance[i]);
                 res = (res - means[i]) / sd[i];
                 normalizedInstanceList.add(String.valueOf(res));
             }
-        List<double> nonNumerics = Arrays.asList(Arrays.copyOfRange(validInstance,4,6));
-        return normalizedInstanceList.addAll(nonNumerics);
+
+        //add attributes to normalizedInstanceList that can't be normalised
+        double[] nonNumerics = Arrays.copyOfRange(validInstance, 4,6);
+        for (double n:nonNumerics) {
+            normalizedInstanceList.add(String.valueOf(n));
+        }
+        return (String[]) normalizedInstanceList.toArray();
     }
 
     /**
@@ -321,7 +328,6 @@ public class WekaWrapperRunner {
         }
         try {
             //Create normalized file
-            //TODO DON't use weka lol
             BufferedWriter outputFile = createCsvTemplateFile(outputCsv, header);
             for (String instance : instances.toString().split("\n")) {
                 if (!(instance.startsWith("@") || instance.isBlank())) {
