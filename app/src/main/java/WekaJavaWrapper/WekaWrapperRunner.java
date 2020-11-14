@@ -45,10 +45,16 @@ public class WekaWrapperRunner {
     public final String classLabels = "low,mid,high";
     //TODO get new means and sds
     //B.PUFAS.gr           B.Calcium  B.Carbohydrates.gr   B.Linoleicacid.gr
-    public final static double[] means = {3.9372174,9.7965213,7.7369304,3.6468098};
-    public final static double[] sd = {0.6352127,0.5101335,0.4715097,0.6506662};
+
+    public final static Hashtable<String, Double>  means = new Hashtable<>() {
+            {put("B.PUFAS.gr", 3.9372174); put("B.Calcium", 9.7965213);
+            put("B.Carbohydrates.gr", 7.7369304); put("B.Linoleicacid.gr", 3.6468098); }};
+
+    public final static Hashtable<String, Double> sd = new Hashtable<>() {
+        { put("B.PUFAS.gr", 0.6352127); put("B.Calcium", 0.5101335);
+        put("B.Carbohydrates.gr", 0.4715097); put("B.Linoleicacid.gr", 0.4715097); }};
+
     public static Hashtable<String, Integer> attrIndexes = new Hashtable<String, Integer>();
-    //Hashtable<String, String> hm = new Hashtable<String, String>();
 
     public static void main(String[] args) {
         //TODO get new header possibly from a file since it is long

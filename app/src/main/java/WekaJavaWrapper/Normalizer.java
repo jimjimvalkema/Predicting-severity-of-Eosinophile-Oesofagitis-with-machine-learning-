@@ -1,6 +1,8 @@
 package WekaJavaWrapper;
 
+import javax.lang.model.type.ArrayType;
 import java.io.*;
+import java.lang.reflect.Array;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -11,8 +13,8 @@ import java.util.ArrayList;
  * A object with functions to normalize a arff or csv file or single instance to a new csv file.
  */
 public class Normalizer {
-    private double[] means;// = new double[10]; //{64.87487,4.381235,69.19741,3.606538,36.82245,3.221768,64.61564,3.182324,39.30981,2.944891};
-    private double[] sd; //{54.05608,2.86146,58.92949,2.19015,19.89936,2.021169,37.97793,2.084124,23.2727,2.194744};\
+    private Hashtable<String, Double> means;// = new double[10]; //{64.87487,4.381235,69.19741,3.606538,36.82245,3.221768,64.61564,3.182324,39.30981,2.944891};
+    private Hashtable<String, Double> sd; //{54.05608,2.86146,58.92949,2.19015,19.89936,2.021169,37.97793,2.084124,23.2727,2.194744};\
     private String header;
     private Hashtable<String, Integer> attrIndexes;
 
@@ -22,7 +24,7 @@ public class Normalizer {
      * @param sd a list of standard deviations as doubles used for scaling normalization
      * @param header a comma separated header for the output csv or also input file if it is a csv
      */
-    public Normalizer(double[] means, double[] sd, String header, Hashtable attrIndexes) {
+    public Normalizer(Hashtable means, Hashtable sd, String header, Hashtable attrIndexes) {
         this.setMeans(means);
         this.setSd(sd);
         this.setHeader(header);
@@ -68,19 +70,18 @@ public class Normalizer {
         double[] validInstance = getValidInstance(instance);
         double res;
 
-        //TODO some instances are not numerical and can't / need to be normalised
         List<String> normalizedInstanceList = new ArrayList<String>();
         //String[] normalizedInstance = new String[4];
-        for (int i = 0; i < validInstance.length - 3; i ++) {
-            //TODO maybe handle 0 values differently?
-            res = log2(validInstance[i]+0.001);
-            res = (res - this.means[i]) / this.sd[i];
+        for (int i = 0; i < validInstance.length; i ++) {
+            String currentAttr = this.attrIndexes.keySet().toArray()[i].toString();
+            if (currentAttr.matches("Gender") || currentAttr.matches("Neocate")){
+                res = validInstance[i];
+            } else {
+                //TODO maybe handle 0 values differently?
+                res = log2(validInstance[i]+0.001);
+                res = (res - this.means.get(currentAttr)) / this.sd.get(currentAttr);
+            }
             normalizedInstanceList.add(String.valueOf(res));
-        }
-        //add attributes to normalizedInstanceList that can't be normalised
-        double[] nonNumerics = Arrays.copyOfRange(validInstance, 4,6);
-        for (double n:nonNumerics) {
-            normalizedInstanceList.add(String.valueOf(n));
         }
         String[] normalizedInstanceArray = new String[normalizedInstanceList.size()];
         normalizedInstanceList.toArray(normalizedInstanceArray);
@@ -98,7 +99,8 @@ public class Normalizer {
             File outputFile = new File(outputFilePath);
             BufferedWriter outPutFile = new BufferedWriter(
                     new FileWriter(outputFilePath, true));
-            outPutFile.write(this.getHeader() + "\n");
+            String newHeader = this.attrIndexes.keySet().toString().replace("[", "").replace("]", "");
+            outPutFile.write(newHeader+ "\n");
             if (outputFile.createNewFile()) {
             } else {
                 PrintWriter writer = new PrintWriter(outputFile);
@@ -289,19 +291,19 @@ public class Normalizer {
     }
 
 
-    private void setMeans(double[] means) {
+    private void setMeans(Hashtable<String, Double>  means) {
         this.means = means;
     }
 
-    private void setSd(double[] sd) {
+    private void setSd(Hashtable<String, Double> sd) {
         this.sd = sd;
     }
 
-    public double[] getMeans() {
+    public Hashtable<String, Double>  getMeans() {
         return means;
     }
 
-    public double[] getSd() {
+    public Hashtable<String, Double>  getSd() {
         return sd;
     }
 
