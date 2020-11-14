@@ -30,7 +30,7 @@ public class WekaWrapperRunner {
     //TODO better comments remove useless code
 
     //TODO check if csv and if data range is normal ex 0 or -1
-    //TODO create options to disable scaling
+    //TODO create options to disable scaling why??
     //TODO make printing distributions optional
     //TODO show help when failing to parse options
     //TODO arf mischien??
@@ -62,19 +62,25 @@ public class WekaWrapperRunner {
             } else {
                 WekaWrapperRunner runner = new WekaWrapperRunner();
                 String normalizedCsv = "testdata/unclassified_normalised_data.csv";
-
                 //normalise from either the terminal or CSV and store the output into a csv
                 if (op.instanceProvided()) {
+                    attrIndexes = getAttrIndexes(header,extractingAttr);
+                    Normalizer normalizer = new Normalizer(means,sd,header,attrIndexes);
                     System.out.println("classifying instance from terminal");
-                    attrIndexes = getAttrIndexes(header,extractingAttr);
                     String instance = op.getInstance();
-                    runner.createNormCsvFromInstance(instance, normalizedCsv,header);
+                    normalizer.createNormCsvFromInstance(instance, normalizedCsv);
                 } else {
-                    //TODO detect if it is a csv or arff
-                    String inputFile = op.getInputfile();
-                    header = getHeader(inputFile);
+                    //TODO clean up get header
+                    header = getHeader(op.getInputfile());
                     attrIndexes = getAttrIndexes(header,extractingAttr);
-                    createNormArffFromFile(inputFile,normalizedCsv,means,sd,header);
+                    Normalizer normalizer = new Normalizer(means,sd,header,attrIndexes);
+                    String inputFile = op.getInputfile();
+                    if (inputFile.toLowerCase().endsWith(".csv")) {
+                        System.out.println("started normalizing");
+                        normalizer.createNormCsvFromCsvFile(inputFile, normalizedCsv);
+                    } else if (inputFile.toLowerCase().endsWith("arff")) {
+                        normalizer.createNormCsvFromArfFile(inputFile,normalizedCsv);
+                    } else {throw new IllegalAccessException("File type is unknown");}
                     System.out.println("classifying instance from CSV");
                 }
                 runner.classifyCsv(normalizedCsv);
@@ -117,10 +123,9 @@ public class WekaWrapperRunner {
     private static Hashtable<String, Integer> getAttrIndexes(String header, String[] extractingAttr) {
         Hashtable<String, Integer> attrIndexes = new Hashtable<String, Integer>();
         String[] splitHeader = header.split(",");
-
         for (int i = 0; i < splitHeader.length; i++) {
             for (int j = 0; j < extractingAttr.length; j++) {
-                if (splitHeader[i] == extractingAttr[j]){
+                if (splitHeader[i].replaceAll(" ","").matches(extractingAttr[j])){
                     attrIndexes.put(extractingAttr[j],i);
                 }
 
