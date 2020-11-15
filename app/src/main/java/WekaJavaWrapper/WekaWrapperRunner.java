@@ -10,41 +10,25 @@ import weka.core.Instances;
 import weka.core.converters.CSVLoader;
 import weka.filters.Filter;
 import weka.filters.unsupervised.attribute.Add;
-import weka.core.converters.ConverterUtils;
 
 import java.io.*;
-import java.lang.reflect.Array;
 import java.util.*;
 import java.io.IOException;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.ArrayList;
 
 public class WekaWrapperRunner {
-    //private static final Logger log = Logger.getLogger(WekaWrapperRunner.class.getName());
-    //private String[] args = null;
-    //private Options options = new Options();
     //todo apachi cli arguments
     //todo clean up
     //todo readme
     //TODO better comments remove useless code
 
-    //TODO check if csv and if data range is normal ex 0 or -1
-    //TODO create options to disable scaling why??
     //TODO make printing distributions optional
-    //TODO show help when failing to parse options
-    //TODO arf mischien??
     //TODO print statistics
-    //TODO print probability
     //TODO versioning
 
-    //TODO putt normalisation functions in a separate class
-
-    //TODO change to new model and class labels
     private final String modelFile = "MetaStackingRandomForest-j48-randomForest-bayes-logistic-(j48_cfs_subset).model";
     public final String classLabels = "low,mid,high";
-    //TODO get new means and sds
-    //B.PUFAS.gr           B.Calcium  B.Carbohydrates.gr   B.Linoleicacid.gr
+    public final static String[] extractingAttr = {"B.PUFAS.gr", "B.Calcium","B.Carbohydrates.gr","B.Linoleicacid.gr","Gender",
+            "Neocate"};
 
     public final static Hashtable<String, Double>  means = new Hashtable<>() {
             {put("B.PUFAS.gr", 3.9372174); put("B.Calcium", 9.7965213);
@@ -56,10 +40,8 @@ public class WekaWrapperRunner {
 
     public static Hashtable<String, Integer> attrIndexes = new Hashtable<String, Integer>();
 
+
     public static void main(String[] args) {
-        //TODO get new header possibly from a file since it is long
-        String header = "\"B.PUFAS.gr\"\"B.Calcium\"\"B.Carbohydrates.gr\"\"B.Linoleicacid.gr\"\"Gender\"\"Neocate\"";
-        String[] extractingAttr = {"B.PUFAS.gr", "B.Calcium","B.Carbohydrates.gr","B.Linoleicacid.gr","Gender","Neocate"};
         try {
             ApacheCliOptionsProvider op = new ApacheCliOptionsProvider(args);
             if (op.helpRequested() || op.haNosUserOptions()) {
@@ -70,14 +52,14 @@ public class WekaWrapperRunner {
                 String normalizedCsv = "testdata/unclassified_normalised_data.csv";
                 //normalise from either the terminal or CSV and store the output into a csv
                 if (op.instanceProvided()) {
+                    String header = String.join(",",extractingAttr);
                     attrIndexes = getAttrIndexes(header,extractingAttr);
                     Normalizer normalizer = new Normalizer(means,sd,header,attrIndexes);
                     System.out.println("classifying instance from terminal");
                     String instance = op.getInstance();
                     normalizer.createNormCsvFromInstance(instance, normalizedCsv);
                 } else {
-                    //TODO clean up get header
-                    header = getHeader(op.getInputfile());
+                    String header = getHeader(op.getInputfile());
                     attrIndexes = getAttrIndexes(header,extractingAttr);
                     Normalizer normalizer = new Normalizer(means,sd,header,attrIndexes);
                     String inputFile = op.getInputfile();
@@ -113,7 +95,6 @@ public class WekaWrapperRunner {
                 if (splitHeader[i].replaceAll(" ","").matches(extractingAttr[j])){
                     attrIndexes.put(extractingAttr[j],i);
                 }
-
             }
         }
 
@@ -135,7 +116,6 @@ public class WekaWrapperRunner {
             Instances unClassifiedInstancesFromCsv = csvLoader.getDataSet();
             if (unClassifiedInstancesFromCsv.classIndex() == -1)
                 unClassifiedInstancesFromCsv.setClassIndex(unClassifiedInstancesFromCsv.numAttributes() - 1);
-
 
             //define attribute and its labels, name etc
             Instances newData = new Instances(unClassifiedInstancesFromCsv);
@@ -171,7 +151,7 @@ public class WekaWrapperRunner {
             labeled.instance(i).setClassValue(clsLabel);
         }
         for (int i = 0; i < labeled.size(); i++) {
-            System.out.println("instance "+ (i+1) + " classified as: " + labeled.get(i).stringValue(10));
+            System.out.println("instance "+ (i+1) + " classified as: " + labeled.get(i).stringValue(6));
             System.out.println("With the probability distribution of: ");
             double[] distributionForInstance = stack.distributionForInstance(labeled.instance(i));
             for (int j = 0; j < distributionForInstance.length; j++) {
