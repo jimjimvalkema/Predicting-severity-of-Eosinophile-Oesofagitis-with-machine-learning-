@@ -9,48 +9,46 @@ output:
 ---
 
 ## Dataset
-TODO neocate en ffed
 Nutritional intake was assessed in 40 Dutch adult EoE patients participating in the Supplemental Elemental Trial (SET) using 3-day food diaries. In this randomized controlled trial, diagnosed patients received either a four-food elimination diet alone (FFED) or FFED with addition of an amino acid-based formula (Neocate) for 6 weeks. Disease severity was assessed by peak eosinophil count/high power field (PEC) in esophageal biopsy specimens. Multiple linear regression analyses were performed to assess associations between the intake of nutrients and foods per 1000 kCal and PEC, both at baseline and after the 6 weeks diet, while controlling for baseline variables.
-What do vars mean
-datatypes, units, values
-What is the dependent class variable
+TODO code book
 
 ## Introduction
+TODO
 
 ## Research question
 Can the peak eosinophil baseline in individuals with eosinophilic oesophagitis be predicted with classical machine learning using the measured nutrient intake data?
 
 ## Missing data
 Missing columns TODO
-There are quite a bit of missing attributes and missing values in this data set. Luckily there are plenty of attributes that do have data from where the machine learning algorithm can make its prediction.
+There are quite a bit of missing attributes and missing values in this data set. Luckily there are plenty of attributes that do have data from where the machine learning algorithm can make its prediction. Figure 1 shows that a lot of attributes miss more then 70% of their values which in combination with the few instances of this data set means that those attribute are not of value to a machine learning algorithm
 
 37 empty instances
 180 empty attributes 
-Lots of columns with more then 70 % missing values
 ```{r echo=FALSE, cache=FALSE, results=TRUE, warning=FALSE, comment=FALSE, warning=FALSE}
-library("ggpubr")
+library(ggpubr)
+library(foreign)
+library(janitor)
+library(memisc)
+library(ggplot2)
 
 # http://www.milanor.net/blog/how-to-open-an-spss-file-into-r/
-library(foreign)
-#install.packages("janitor")
-library(janitor)
-#install.packages("memisc")
-library("memisc")
-library("ggplot2")
-#library("unpivotr")
 dataset_original = read.spss("../data/Datafile compleet 20-03-2020 voor Hanze SET def.sav", to.data.frame=TRUE, use.value.labels=F, reencode=F, use.missings	=F)
 dataset_no_empty <- remove_empty(dataset_original, which = c("rows", "cols"), quiet = FALSE)
-#sapply(dataset_no_empty, function(x) sum(is.na(x)))[]
 
 # get amount f missing values
-columns.NA <- as.data.frame(colSums(is.na(dataset_no_empty))) # TODO gg plot
+columns.NA <- as.data.frame(colSums(is.na(dataset_no_empty)))
 
 # convert to percentage and plot TODO ggplot
-get_percentage <- function(x) return((x/nrow(dataset_no_empty))*100) #TODO fix percentages too high
+get_percentage <- function(x) return((x/nrow(dataset_no_empty))*100)
 columns.NA <- apply(columns.NA, 1, get_percentage)
 names(columns.NA) <- c()
-hist(columns.NA, xlab= "percentage of missing values",ylab = "amount of attributes",  main = "Amount of attributes with missing values", breaks = 40)
 
+# plot
+ggplot(data.frame(columns.NA), aes(x=columns.NA)) + geom_histogram(bins = 50) + 
+  ggtitle( "Amount of attributes with missing values") + 
+  xlab("percentage of missing values") + 
+  ylab("amount of attributes") + 
+  theme_pubr()
 
 # remove all attributes with less then 40% na
 dataset_clean <- dataset_no_empty[, which(colMeans(!is.na(dataset_no_empty)) > 0.4)]
@@ -59,6 +57,8 @@ dataset_clean <- dataset_no_empty[, which(colMeans(!is.na(dataset_no_empty)) > 0
 #   geom_density(adjust = 0.5) +
 #   facet_wrap(~variable) + ggtitle( "attributes density")
 ```
+*Figure 1: Shows the amount of attributes that miss a certain percentage of values. With the percentage of missing values on the x axis and the amount of attributes on the y. This plot clearly show that a lot of attributes miss 60~70 percent of their values*
+
 ```{r echo=FALSE, cache=FALSE, results=TRUE, warning=FALSE, comment=FALSE, warning=FALSE}
 print("columns removed because too many missing values")
 ncol(dataset_no_empty)- ncol(dataset_clean)
@@ -145,7 +145,7 @@ ggplot(melt(scaled_norm_not_logged[c(1:12)]), aes(value)) +
   geom_density(adjust = 0.5) +
   facet_wrap(~variable) + ggtitle( "attributes density normalised not logged")  + theme_pubr()
 ```
-
+### Correlation
 ```{r echo=FALSE, cache=FALSE, results=TRUE, warning=FALSE, comment=FALSE, warning=FALSE}
 library("ggcorrplot")
 #TODO
