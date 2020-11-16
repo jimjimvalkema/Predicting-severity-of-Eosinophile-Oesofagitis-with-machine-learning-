@@ -16,10 +16,8 @@ TODO code book
 Can the peak eosinophil baseline in individuals with eosinophilic oesophagitis be predicted with classical machine learning using the measured nutrient intake data?
 
 ## Missing data
-There are quite a bit of missing attributes and missing values in this data set. Luckily there are plenty of attributes that do have data from where the machine learning algorithm can make its prediction. Figure 1 shows that a lot of attributes miss more then 70% of their values which in combination with the few instances of this data set means that those attribute are not of value to a machine learning algorithm
+There are quite a bit of missing attributes and missing values in this data set. Luckily there are plenty of attributes that do have data from where the machine learning algorithm can make its prediction. Figure 1 shows that a lot of attributes miss more than 70% of their values which in combination with the few instances of this data set means that those attribute are not of value to a machine learning algorithm.  
 
-37 empty instances
-180 empty attributes 
 ```{r echo=FALSE, cache=FALSE, results=TRUE, warning=FALSE, comment=FALSE, warning=FALSE}
 library(ggpubr)
 library(foreign)
@@ -31,7 +29,7 @@ library(ggplot2)
 dataset_original = read.spss("../data/Datafile compleet 20-03-2020 voor Hanze SET def.sav", to.data.frame=TRUE, use.value.labels=F, reencode=F, use.missings	=F)
 dataset_no_empty <- remove_empty(dataset_original, which = c("rows", "cols"), quiet = FALSE)
 
-# get amount f missing values
+# get amount of missing values
 columns.NA <- as.data.frame(colSums(is.na(dataset_no_empty)))
 
 # convert to percentage and plot TODO ggplot
@@ -46,7 +44,7 @@ ggplot(data.frame(columns.NA), aes(x=columns.NA)) + geom_histogram(bins = 50) +
   ylab("amount of attributes") + 
   theme_pubr()
 
-# remove all attributes with less then 40% na
+# remove all attributes with less than 40% na
 dataset_clean <- dataset_no_empty[, which(colMeans(!is.na(dataset_no_empty)) > 0.4)]
 ```
    
@@ -64,13 +62,13 @@ library(grid)
 ```
    
 
-### distrubution
-Most attributes seem normally distributed how ever their range differ quite significantly so a normalization step might be required other wise the range can bias the machine learning algorithm to specific attributes.
+### distribution
+Most attributes seem normally distributed however their range differs quite significantly so a normalization step might be required otherwise the range can bias the machine learning algorithm to specific attributes.  
 ```{r echo=FALSE, cache=FALSE, results=TRUE, warning=FALSE, comment=FALSE, warning=FALSE}
 library(reshape2)
 dataset_selected <- dataset_clean[c("PeakEosBaseline_Max","B.Fat.gr", "B.Sat.fat.gr", "B.PUFAS.gr","B.Protein.gr","B.Phosphorus","B.Zinc","B.vitB12", "B.Folate", "B.Calcium","B.Carbohydrates.gr","B.Linoleicacid.gr","Age","Agegroup","Gender","Histological_Response","Neocate")]
-# folate is natural occuring in food folate acid is added but they serve the same purpose 
-# PUFAS = ploy unsaturated fatty acids
+# folate is naturally occuring in food folate acid is added but they serve the same purpose 
+# PUFAS = polyunsaturated fatty acids
 
 # still 2 empty rows left
 dataset_selected <- remove_empty(dataset_selected, which = c("rows", "cols"), quiet = FALSE)
@@ -92,7 +90,7 @@ ggplot( melt(dataset_selected[c(1:12)]), aes(value)) +
   scale_x_continuous(limits = c(0, 300)) + theme_pubr()
 ```
    
-*Figure 2: Shows the density of the values of a selection of attributes from the data set. With the density on the y axis and the values on the x axis. This plot clearly shows that the ranges differ drammaticly and because and are skewed to the right which indicated that it could bennefit from a log transformation.*   
+*Figure 2: Shows the density of the values of a selection of attributes from the data set. With the density on the y axis and the values on the x axis. This plot clearly shows that the ranges differ dramatically and because and are skewed to the right which indicates that it could benefit from a log transformation.*    
 
 ```{r echo=FALSE, cache=FALSE, results=TRUE, warning=FALSE, comment=FALSE, warning=FALSE}
 ggplot(melt(logged.dataset[c(1:12)]), aes(value)) +
@@ -101,16 +99,16 @@ ggplot(melt(logged.dataset[c(1:12)]), aes(value)) +
   scale_x_continuous(limits = c(2, 12))  + theme_pubr()
 ```
    
-*Figure 3: same as figure 2 but with then log two transformed. It hows the density of the values of a selection of attributes from the data set. With the density on the y axis and the values on the x axis.*   
+*Figure 3: same as figure 2 but with then log two transformed. It shows the density of the values of a selection of attributes from the data set. With the density on the y axis and the values on the x axis.*      
 
 
 ### Normalisation
-The data varies a lot in its range per each attribute (figure 4) so normalisation is required. Scaling normalisation seems to be optimal since it is able to put the data in more reasonable ranges while still being able to accept new data even if it falls out of the range previously measured unlike min-max normalisation. It can also be more clearly observed that the data represent a more normal distrubtion from log transformation in figure 6. This is where the data is plotted in a density plot like figure 2. This is because the range are now more simmilair becuase of the scaling normalisation.    
+The data varies a lot in its range per each attribute (figure 4) so normalisation is required. Scaling normalisation seems to be optimal since it is able to put the data in more reasonable ranges while still being able to accept new data even if it falls out of the range previously measured unlike min-max normalisation. It can also be more clearly observed that the data represent a more normal distribution from log transformation in figure 6. This is where the data is plotted in a density plot like figure 2. This is because the ranges are now more similar because of the scaling normalisation.    
 
 ```{r echo=FALSE, cache=FALSE, results=TRUE, warning=FALSE, comment=FALSE, warning=FALSE}
 ggplot(data = melt(logged.dataset[1:12]), aes(x=variable,y=value)) + geom_boxplot(outlier.colour="black", outlier.shape=16,outlier.size=2, notch=F) +     theme_pubr() +
   ggtitle("all atributes not scaled") +
-  xlab("attribute") +
+  xlab("attributes") +
   scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
     theme(axis.text = element_text(size = 8, face = "bold", color = "black"),
         axis.title.y = element_text(vjust = 1), 
@@ -123,18 +121,15 @@ scale_min_max <- function(x){
   return ((x - x_min) / (x_max - x_min))
 }
 
-# TODO choose between age vs agegroup
-
 min_max_norm <- cbind(apply(logged.dataset[1:12], MARGIN = 2, FUN = scale_min_max),logged.dataset[13:17])
 scaled_norm <- cbind(scale(logged.dataset[1:12]),logged.dataset[13:17])
 scaled_norm_not_logged <- cbind(scale(dataset_selected[1:12]),dataset_selected[13:17])
-# TODO better titles
 ```
     
-*Figure 4: Shows a selection of attributes and their distrubutions as a boxplot. The x axis shows the attributes and y axis its values those attributes range within. This plot shows that the range vary largely between attributes.*   
+*Figure 4: Shows a selection of attributes and their distributions as a boxplot. The x axis shows the attributes and y axis its values those attributes range within. This plot shows that the range varies largely between attributes.*     
 ```{r echo=FALSE, cache=FALSE, results=TRUE, warning=FALSE, comment=FALSE, warning=FALSE}
-#ggplot(data = melt(min_max_norm[1:12]), aes(x=variable,y=value)) + geom_boxplot(outlier.colour="black", outlier.shape=16,outlier.size=2, notch=F) + ggtitle("all atributes min max normalisation")+ theme_pubr()
-ggplot(data = melt(scaled_norm[1:12]), aes(x=variable,y=value)) + geom_boxplot(outlier.colour="black", outlier.shape=16,outlier.size=2, notch=F) + ggtitle("all atributes scaling normalisation")+ theme_pubr() +
+#ggplot(data = melt(min_max_norm[1:12]), aes(x=variable,y=value)) + geom_boxplot(outlier.colour="black", outlier.shape=16,outlier.size=2, notch=F) + ggtitle("all attributes min max normalisation")+ theme_pubr()
+ggplot(data = melt(scaled_norm[1:12]), aes(x=variable,y=value)) + geom_boxplot(outlier.colour="black", outlier.shape=16,outlier.size=2, notch=F) + ggtitle("all attributes scaling normalisation")+ theme_pubr() +
   xlab("attribute")+
   scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
     theme(axis.text = element_text(size = 8, face = "bold", color = "black"),
@@ -142,7 +137,7 @@ ggplot(data = melt(scaled_norm[1:12]), aes(x=variable,y=value)) + geom_boxplot(o
         axis.title.x = element_text(vjust = 0.005))
 ```
    
-*Figure 5: Shows a selection of attributes and their distrubutions after scaling normalisation as a boxplot. The x axis shows the attributes and y axis its values those attributes range within. This plot shows the distrubutions are far more comparable then without normalisation.*   
+*Figure 5: Shows a selection of attributes and their distributions after scaling normalisation as a boxplot. The x axis shows the attributes and y axis its values those attributes range within. This plot shows the distributions are far more comparable then without normalisation.*      
 
 ```{r echo=FALSE, cache=FALSE, results=TRUE, warning=FALSE, comment=FALSE, warning=FALSE}
 
@@ -158,32 +153,27 @@ ggplot(melt(scaled_norm_not_logged[c(1:12)]), aes(value)) +
   facet_wrap(~variable) + ggtitle( "attributes density normalised not logged")  + theme_pubr()
 ```
    
-*Figure 6: Shows the density of the values of a selection of attributes from the data set. With the density on the y axis and the values on the x axis. This plot shows that the data is now far more normal distrubuted after scaling and more comparable in its ranges then in figure 2*   
+*Figure 6: Shows the density of the values of a selection of attributes from the data set. With the density on the y axis and the values on the x axis. This plot shows that the data is now far more normal distributed after scaling and more comparable in its ranges then in figure 2*     
 
 ### Correlation
 It seems that the majority isn't highly correlated which might be a good indication that there is enough information between attributes for the algorithm to train on. Some attributes like saturated fat and fat in general (B.Sat.fat.gr and B.Fat.gr) are highly correlated. This means it is probably better to leave either one out.   
 ```{r echo=FALSE, cache=FALSE, results=TRUE, warning=FALSE, comment=FALSE, warning=FALSE}
 library("ggcorrplot")
-#TODO
-#test <- remove_empty(scaled_norm, which = c("rows", "cols"), quiet = FALSE)
-#
-# TODO better attribute names
-# TODO exclude neocate
 # split the data in 2 because it wont fit in 1 plot
 scaled_norm.1 <- scaled_norm[,1:8]
+
 # add the first columns because that is PeakEos which is our attribute we want to predict
 scaled_norm.2 <- scaled_norm[,c(1,9:17)]
 cor.data.scaled.1 <- cor(scaled_norm.1)
 cor.data.scaled.2 <- cor(scaled_norm.2)
-ggcorrplot(cor.data.scaled.1,  ggtheme = ggplot2::theme_gray,hc.order = T,lab = T, digits=1) + ggtitle( "correlation matrix of the bones lenght and width") #+ theme_pubr()
-ggcorrplot(cor.data.scaled.2,  ggtheme = ggplot2::theme_gray,hc.order = T,lab = T, digits=1) + ggtitle( "correlation matrix of the bones lenght and width") #+ theme_pubr()
-#TODO check if histological response
+ggcorrplot(cor.data.scaled.1,  ggtheme = ggplot2::theme_gray,hc.order = T,lab = T, digits=1) + ggtitle( "correlation matrix of the different attributes") #+ theme_pubr()
+ggcorrplot(cor.data.scaled.2,  ggtheme = ggplot2::theme_gray,hc.order = T,lab = T, digits=1) + ggtitle( "correlation matrix of the different attributes") #+ theme_pubr()
 ```
    
 *Figure 7 & 8: show the correlation between attributes. It seems that the majority isn't highly correlated which might be a good indication that there is enough information between attributes for the algorithm to train on.*
 
-### splitting Peak eos baseline max into catagories
-The Peak eos baseline max needs to be split into catagories because most classical machine learning algorithms cant use a numerical dependent class variable. The Peak eos baseline max is split into three catagories: low, mid, high split at 0-49, 49-75, 75-200. This seems to create a a most even distrubution of instances while also being informative. It could be split into more catagories but this would make it harder to create a machine learining model with high accuracy.   
+### splitting Peak eos baseline max into categories
+The Peak eos baseline max needs to be split into categories because most classical machine learning algorithms can't use a numerical dependent class variable. The Peak eos baseline max is split into three categories: low, mid, high split at 0-49, 49-75, 75-200. This seems to create the most even distribution of instances while also being informative. It could be split into more categories but this would make it harder to create a machine learning model with high accuracy.  
    
 ```{r echo=FALSE, cache=FALSE, results=TRUE, warning=FALSE, comment=FALSE, warning=FALSE}
 factor_columns <- c("Gender","Histological_Response","Neocate")
@@ -206,12 +196,13 @@ write.csv(scaled_norm,"../data/selected_data_logged_scaled.csv", row.names = FAL
 summary(scaled_norm$PeakEosBaseline_Max)
 ```
    
-*Figure 9: Shows the distribution of the peak max eosinophils whith the peak eosinophils on the x axis and its frequency on te y axis. This plot shows that most values at approxiamtly at 50 and 100  with the rest inbetween.*    
+*Figure 9: Shows the distribution of the peak max eosinophils with the peak eosinophils on the x axis and its frequency on the y axis. This plot shows that most values are approximately at 50 and 100  with the rest inbetween.*      
 
 ## quality metrics
-The most important metric to optimise for is the sensistivity a false positive case is less harmfull then a false negative case. This is because a patient that is clasified as sick but turns out to be healthy after further inspection, experiences far less harm then those who are clasified as healthy but continue suffering from symptoms.   
+The most important metric to optimise for is the sensitivity a false positive case is less harmful then a false negative case. This is because a patient that is classified as sick but turns out to be healthy after further inspection, experiences far less harm then those who are classified as healthy but continue suffering from symptoms.   
 
-The algorithm should be able to run on a consumer desktop and but doesn't need to be too fast when classefying. This because it is likely that only one patient will be avaluated at the time so accuracy is far more important then speed.   
+The algorithm should be able to run on a consumer desktop and doesn't need to be too fast when classifying. This is because it is likely that only one patient will be evaluated at the time so accuracy is far more important than speed.   
+   
 
 
 ## model evaluation
@@ -219,12 +210,12 @@ Model evaluation is done in the weka experimenter with five data sets and seven 
 
 The meta stacking algorithm has the following settings:    
 Meta learner algorithm: Randomforest (default weka settings)   
-ensamble members (all default weka settings): J48, Random Forest, naive Bayes and logistic regression.   
+ensemble members (all default weka settings): J48, Random Forest, naive Bayes and logistic regression.   
   
 The other algorithms used are:    
-Naivebayes   
+Naive Bayes   
 Logistic regression  
-K nearest neighbohr  
+K nearest neighbor  
 OneR   
 ZeroR  
 J48  
@@ -233,9 +224,9 @@ Randomforest
 
 The different data sets are created from the original dataset which is logged and normalised and then the different datasets are created by using different attribute selection methods.   
 These methods are: 
-classiefier attribute evaluation with j48. Done with the setting leave one out turned on and with it off.   
-And a dataset is created with correlation-based feature selection. The classiefier attribute evaluation data sets also have different variations on when a attribute is no longer included based on rank.   
-
+classifier attribute evaluation with j48. Done with the setting leave one out turned on and with it off.   
+And a dataset is created with correlation-based feature selection. The classifier attribute evaluation datasets also have different variations on when an attribute is no longer included based on rank.   
+  
 ```{r echo=FALSE, cache=FALSE, results=TRUE, warning=FALSE, comment=FALSE, warning=FALSE}
 library(DT)
 library(rio)
