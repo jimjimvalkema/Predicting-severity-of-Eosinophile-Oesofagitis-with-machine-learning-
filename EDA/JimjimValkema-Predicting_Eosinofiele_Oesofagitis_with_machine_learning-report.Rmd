@@ -5,6 +5,7 @@ date: "11/16/2020"
 output:
   html_document:
     df_print: paged
+  pdf_document: default
 ---
 ---
 title: "Birds' bones and living habits"
@@ -14,12 +15,9 @@ output:
   pdf_document: default
   html_document: default
 ---
-## data set  
-TODO codebook
-
 ## introduction  
-Eosinphilic esophagitis is a food allergy in the esophagus. The allergy causes a type of white bloodcells called eosinphilis to build up in the lining of the esophagus which cause swelling, pain and discomfort. The allergy gets triggered by different types of food for different people. These triggers are usually found by making the patient follow a elimination diet.   
-Eosinphilic esophagitis is diagnosed by a gastroenterologistc who will examen the esophagus with a endoscope while the patient is under anesthesia and take a biopsy from the esophagus if needed. This is a moderatly invasive procedure for diagnosis and that is why there is a another method of diagnoses researched in this study. This study proposes a method of diagnosis by measuring certain blood markers and identifying patients whith eosinphilic esophagitis with a machine learning algorithm.    
+Eosinophilic esophagitis is a food allergy in the esophagus. The allergy causes a type of white blood cells called eosinophils to build up in the lining of the esophagus which cause swelling, pain and discomfort. The allergy gets triggered by different types of food for different people. These triggers are usually found by making the patient follow an elimination diet.   
+Eosinophilic esophagitis is diagnosed by a gastroenterologist who will examine the esophagus with an endoscope while the patient is under anesthesia and take a biopsy from the esophagus if needed. This is a moderately invasive procedure for diagnosis and that is why there is another method of diagnoses researched in this study. This study proposes a method of diagnosis by measuring certain blood markers and identifying patients with eosinophilic esophagitis with a machine learning algorithm.    
   
 
 ## materials and methods
@@ -28,7 +26,6 @@ Eosinphilic esophagitis is diagnosed by a gastroenterologistc who will examen th
 Nutritional intake was assessed in 40 Dutch adult EoE patients participating in the Supplemental Elemental Trial (SET) using 3-day food diaries. In this randomized controlled trial, diagnosed patients received either a four-food elimination diet alone (FFED) or FFED with addition of an amino acid-based formula (Neocate) for 6 weeks. Disease severity was assessed by peak eosinophil count/high power field (PEC) in esophageal biopsy specimens. Multiple linear regression analyses were performed to assess associations between the intake of nutrients and foods per 1000 kCal and PEC, both at baseline and after the 6 weeks diet, while controlling for baseline variables.
 
 ### software  
-TODO versions and double check missing libraries
 The exploratory data analysis has been done using rmarkdown with the following packages: 
 * ggplot: for creating plots    
 * gridExtra: further styling plots  
@@ -39,30 +36,162 @@ The exploratory data analysis has been done using rmarkdown with the following p
   
 Creating the machine learning model has been done in weka.  
   
-Development of the wekawrapper has been done in intellij with the java programming language.  
+Development of the wekawrapper command line tool has been done in intellij with the java programming language.  
   
 ### exploratory data analysis   
-TODO show boxplot and density, splitting peak eos
+There are quite a bit of missing attributes and missing values in this data set. Luckily there are plenty of attributes that do have data from where the machine learning algorithm can make its prediction. Figure 1 shows that a lot of attributes miss more than 70% of their values which in combination with the few instances of this data set means that those attributes are not of value to a machine learning algorithm and are therefore removed in this study. However the data does only have 42 instances so training an algorithm could result in overfitting. 
 
-There are quite a bit of missing attributes and missing values in this data set. Luckily there are plenty of attributes that do have data from where the machine learning algorithm can make its prediction. Figure 1 shows that a lot of attributes miss more than 70% of their values which in combination with the few instances of this data set means that those attribute are not of value to a machine learning algorithm and are there for removed in this study. However the data does only has 42 instance so training a algorithm could result in overfitting.     
+```{r echo=FALSE, cache=FALSE, results=FALSE, warning=FALSE, comment=FALSE, warning=FALSE}
+library(ggpubr)
+library(foreign)
+library(janitor)
+library(memisc)
+library(ggplot2)
 
-The data has also been log two transformed so that it would better fit a normal distrubution (figure 2 TODO density plot) which act more predictable with most machine learning algorithms. Further more the data has been normalised (Figure 3 TODO boxplot) with scaling normalisation. Scaling normalisation normalises the data with the standard deviation which has the advantage of being able to scale fututere measurements even when the might range outside of the training data set unlike min-max normalisation. This is espacialy important for this data set since it contains such few instances. 
+# http://www.milanor.net/blog/how-to-open-an-spss-file-into-r/
+dataset_original = read.spss("../data/Datafile compleet 20-03-2020 voor Hanze SET def.sav", to.data.frame=TRUE, use.value.labels=F, reencode=F, use.missings	=F)
+dataset_no_empty <- remove_empty(dataset_original, which = c("rows", "cols"), quiet = FALSE)
 
-It seems that the majority isn't highly correlated which meant that there is enough information between attributes for the algorithm to train on. Some attributes like the fats (B.Sat.fat.gr, B.Fat.gr, etc) are highly correlated.  So only one of these ended up in the final training data set because the others convey very little information to algorithm. In this case it ended up being the poly unsaturated fatty acids (B.PUFAS.gr) who ended up in the final training data set during the attribute selection.  
+# get amount of missing values
+columns.NA <- as.data.frame(colSums(is.na(dataset_no_empty)))
+
+# convert to percentage and plot TODO ggplot
+get_percentage <- function(x) return((x/nrow(dataset_no_empty))*100)
+columns.NA <- apply(columns.NA, 1, get_percentage)
+names(columns.NA) <- c()
+
+# plot
+ggplot(data.frame(columns.NA), aes(x=columns.NA)) + geom_histogram(bins = 50) + 
+  ggtitle( "Amount of attributes with missing values") + 
+  xlab("percentage of missing values") + 
+  ylab("amount of attributes") + 
+  theme_pubr()
+
+# remove all attributes with more than 40% na
+dataset_clean <- dataset_no_empty[, which(colMeans(!is.na(dataset_no_empty)) > 0.4)]
+
+library(reshape2)
+dataset_selected <- dataset_clean[c("PeakEosBaseline_Max","B.Fat.gr", "B.Sat.fat.gr", "B.PUFAS.gr","B.Protein.gr","B.Phosphorus","B.Zinc","B.vitB12", "B.Folate", "B.Calcium","B.Carbohydrates.gr","B.Linoleicacid.gr","Age","Agegroup","Gender","Histological_Response","Neocate")]
+# folate is naturally occuring in food folate acid is added but they serve the same purpose 
+# PUFAS = polyunsaturated fatty acids
+
+# still 2 empty rows left
+dataset_selected <- remove_empty(dataset_selected, which = c("rows", "cols"), quiet = FALSE)
+
+# row 21 has too many missing values in all B. columns
+dataset_selected <- dataset_selected[-21,]
+
+# prevent Inf values after logging
+dataset_selected[1:12] <- dataset_selected[1:12]+0.000001
+
+nrow(dataset_selected)
+logged.dataset <- cbind(log2(dataset_selected[1:12]),dataset_selected[13:17], by="pid")
+melted.dataset <- melt(logged.dataset)
+nrow(logged.dataset)
+```
+   
+*Figure 1: Shows the amount of attributes that miss a certain percentage of values. With the percentage of missing values on the x axis and the amount of attributes on the y. This plot clearly show that a lot of attributes miss 60~70 percent of their values*
+
+The data has also been log two transformed so that it would better fit a normal distribution (figure 4) which acts more predictable with most machine learning algorithms. Furthermore the data has been normalised (Figure 2 and 3) with scaling normalisation. Scaling normalisation normalises the data with the standard deviation which has the advantage of being able to scale future measurements even when they range outside of the training data set unlike min-max normalisation. This is especially important for this data set since it contains such few instances which increases the chance that a new instance has a larger range. 
+
+
+```{r echo=FALSE, cache=FALSE, results=FALSE, warning=FALSE, comment=FALSE, warning=FALSE}
+ggplot(data = melt(logged.dataset[1:12]), aes(x=variable,y=value)) + geom_boxplot(outlier.colour="black", outlier.shape=16,outlier.size=2, notch=F) +     theme_pubr() +
+  ggtitle("all atributes not scaled") +
+  xlab("attributes") +
+  scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+    theme(axis.text = element_text(size = 8, face = "bold", color = "black"),
+        axis.title.y = element_text(vjust = 1), 
+        axis.title.x = element_text(vjust = 0.005))
+
+#scale the data
+scale_min_max <- function(x){
+  x_min = min(x, na.rm = T)
+  x_max = max(x, na.rm = T)
+  return ((x - x_min) / (x_max - x_min))
+}
+
+min_max_norm <- cbind(apply(logged.dataset[1:12], MARGIN = 2, FUN = scale_min_max),logged.dataset[13:17])
+scaled_norm <- cbind(scale(logged.dataset[1:12]),logged.dataset[13:17])
+scaled_norm_not_logged <- cbind(scale(dataset_selected[1:12]),dataset_selected[13:17])
+```
+    
+*Figure 2: Shows a selection of attributes and their distributions as a boxplot. The x axis shows the attributes and y axis its values those attributes range within. This plot shows that the range varies largely between attributes.*     
+```{r echo=FALSE, cache=FALSE, results=FALSE, warning=FALSE, comment=FALSE, warning=FALSE}
+#ggplot(data = melt(min_max_norm[1:12]), aes(x=variable,y=value)) + geom_boxplot(outlier.colour="black", outlier.shape=16,outlier.size=2, notch=F) + ggtitle("all attributes min max normalisation")+ theme_pubr()
+ggplot(data = melt(scaled_norm[1:12]), aes(x=variable,y=value)) + geom_boxplot(outlier.colour="black", outlier.shape=16,outlier.size=2, notch=F) + ggtitle("all attributes scaling normalisation")+ theme_pubr() +
+  xlab("attribute")+
+  scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+    theme(axis.text = element_text(size = 8, face = "bold", color = "black"),
+        axis.title.y = element_text(vjust = 1), 
+        axis.title.x = element_text(vjust = 0.005))
+```
+   
+*Figure 3: Shows a selection of attributes and their distributions after scaling normalisation as a boxplot. The x axis shows the attributes and y axis its values those attributes range within. This plot shows the distributions are far more comparable then without normalisation.* 
+
+
+```{r echo=FALSE, cache=FALSE, results=FALSE, warning=FALSE, comment=FALSE, warning=FALSE}
+ggplot(melt(scaled_norm_not_logged[c(1:12)]), aes(value)) +
+  geom_density(adjust = 0.5) +
+  facet_wrap(~variable) + ggtitle( "attributes density normalised not logged")  + theme_pubr()
+```
+   
+*Figure 4: Shows the density of the values of a selection of attributes from the data set. With the density on the y axis and the values on the x axis. This plot shows that the data is now far more normal distributed after scaling and more comparable in its ranges.*     
+
+It seems that the majority isn't highly correlated which meant that there is enough information between attributes for the algorithm to train on. Some attributes like the fats (B.Sat.fat.gr, B.Fat.gr, etc) are highly correlated (figure 6).  So only one of these ended up in the final training data set because the others convey very little information to the algorithm. In this case the polyunsaturated fatty acids (B.PUFAS.gr) are one of the attributes who ended up in the final training data set during the attribute selection.  
+
+```{r echo=FALSE, cache=FALSE, results=FALSE, warning=FALSE, comment=FALSE, warning=FALSE}
+library("ggcorrplot")
+# split the data in 2 because it wont fit in 1 plot
+scaled_norm.1 <- scaled_norm[,1:8]
+
+# add the first columns because that is PeakEos which is our attribute we want to predict
+scaled_norm.2 <- scaled_norm[,c(1,9:17)]
+cor.data.scaled.1 <- cor(scaled_norm.1)
+cor.data.scaled.2 <- cor(scaled_norm.2)
+ggcorrplot(cor.data.scaled.1,  ggtheme = ggplot2::theme_gray,hc.order = T,lab = T, digits=1) + ggtitle( "correlation matrix of the different attributes") #+ theme_pubr()
+ggcorrplot(cor.data.scaled.2,  ggtheme = ggplot2::theme_gray,hc.order = T,lab = T, digits=1) + ggtitle( "correlation matrix of the different attributes") #+ theme_pubr()
+```
+   
+*Figure 5 & 6: show the correlation between attributes. It seems that the majority isn't highly correlated which might be a good indication that there is enough information between attributes for the algorithm to train on.*
+
+The Peak eosinophil baseline max needs to be split into categories because most classical machine learning algorithms can't use a numerical dependent class variable. The Peak eosinophil baseline max is split into three categories: low, mid, high split at 0-49, 49-75, 75-200. This is found to create the most even distribution of instances while also being informative (figure 7).
+
+```{r echo=FALSE, cache=FALSE, results=FALSE, warning=FALSE, comment=FALSE, warning=FALSE}
+factor_columns <- c("Gender","Histological_Response","Neocate")
+#scaled_norm[,factor_columns] <- as.factor(as.character(scaled_norm[,factor_columns]))
+
+peak.eos.max <- remove_empty(dataset_clean[23], which = c("rows", "cols"), quiet = FALSE)
+
+ggplot(melt(peak.eos.max), aes(value)) +
+  geom_histogram(adjust = 0.5, bins = 40) +
+  facet_wrap(~variable) + ggtitle( "attributes density normalised not logged") + theme_pubr() +
+  xlab("Peak eosinophils") 
+
+scaled_norm$PeakEosBaseline_Max <- cut(as.matrix(peak.eos.max), breaks = c(0,49,75,200), labels = c("low","mid","high"))[-21]
+# TODO check if the gender is correct
+scaled_norm$Gender <- cut(as.matrix(scaled_norm$Gender), breaks = c(-1,0,1), labels = c("male","female"))
+scaled_norm$Histological_Response <- cut(as.matrix(scaled_norm$Histological_Response), breaks = c(-1,0,1,2), labels = c("1st","2nd","3rd"))
+scaled_norm$Neocate <- cut(as.matrix(scaled_norm$Neocate), breaks = c(-1,0,1), labels = c("no response","response"))
+write.csv(scaled_norm,"../data/selected_data_logged_scaled.csv", row.names = FALSE)
+
+```
+   
+*Figure 7: Shows the distribution of the peak max eosinophils with the peak eosinophils on the x axis and its frequency on the y axis. This plot shows that most values are approximately at 50 and 100  with the rest in between.*    
 
 ### evaluation metrics   
-The most important metric to optimise for is the sensitivity a false positive case is less harmful then a false negative case. This is because a patient that is classified as sick but turns out to be healthy after further inspection, experiences far less harm then those who are classified as healthy but continue suffering from symptoms.   
-The speed at which algorithm runs at isn't specificly optimised for nor is it measured on larger data sets. However it's main usecase would be to classiefy individual patients which it can do near instantly in a common desktop envirement.
+The most important metric to optimise for is the sensitivity. A false positive case is less harmful than a false negative case. This is because a patient that is classified as sick but turns out to be healthy after further inspection, experiences far less harm then those who are classified as healthy but continue suffering from symptoms.   
+The speed at which algorithm runs at isn't specifically optimised for nor is it measured on larger data sets. However it's main use case would be to classify individual patients which it can do near instantly in a common desktop environments.
 
    
 ### Exploring algorithms  
-Model evaluation is done in the weka experimenter with five data sets and seven algorithms (default setting from weka 3.8.4) and four variations of the stacking meta algorithm with different settings. The best performing algorithm is believed to be the meta stacking algorithm with the correlation-based feature selection dataset. This algorithm has a accuracy of 47%. The meta stacking algorithm consist of random forest as its meta learner and the following algorithms are its ensamble members: J48, Random Forest, naive Bayes and logistic regression. Some algorithms like oneR and k nearest neighbor aren't used since they do not create a true model and there for arn't usefull in this study.    
+Model evaluation is done in the weka experimenter with five data sets and seven algorithms (default setting from weka 3.8.4) and four variations of the stacking meta algorithm with different settings. The best performing algorithm is believed to be the meta stacking algorithm with the correlation-based feature selection dataset. This algorithm has an accuracy of 47%. The meta stacking algorithm consists of random forest as its meta learner and the following algorithms are its ensemble members: J48, Random Forest, naive Bayes and logistic regression. Some algorithms like oneR and k nearest neighbor aren't used since they do not create a true model and therefore aren't useful in this study.    
 
 ### Attribute selection  
 There are different data sets created from the original dataset which is logged and normalised. The different datasets are created by using different attribute selection methods.   
 These methods are: 
-classifier attribute evaluation with j48. Done with the setting leave one out turned on and with it off. And with differnt rank cuttof points.     
-And correlation-based feature selection.
+Classifier attribute evaluation with j48. Done with the setting, leave one out turned on and with it off and with different rank cut off points.     
+And a dataset created by correlation-based feature selection.
 The data set created from the Correlation-based feature selection yielded the best results and is used in the final model.  
 The attributes selected in this data set are: Neocate, B.Carbohydrates.gr, Gender, B.PUFAS.gr, B.Linoleicacid.gr, B.Calcium
 
@@ -72,48 +201,38 @@ Java wrapper: https://github.com/jimjimvalkema/Predicting-severity-of-Eosinophil
 Rmarkdown EDA log: https://github.com/jimjimvalkema/Predicting-severity-of-Eosinophile-Oesofagitis-with-machine-learning-/blob/master/EDA/Eosinofiele-Oesofagitis-dataset-EDA.Rmd  
 
 ## results    
-The resulting best performing algorithm is a meta stacking algorithm with random forest as its meta-learner and the following ensamble members: J48, Random Forest, naive Bayes and logistic regression.   
+The resulting best performing algorithm is a meta stacking algorithm with random forest as its meta-learner and the following ensemble members: J48, Random Forest, naive Bayes and logistic regression.   
 This model is trained on a dataset that is created from correlation-based feature selection on the original data that is log two transformed, normalised with scaling normalisation and without the attributes that have more than 40% of their values missing.  
-This model can be used in a command line interface to classify a patient in three catogories: low,mid,high based on six attributes with 47% accuracy.
-This commandline interface can process the raw data and can do the neccesary pre-processing like normalisation and log transform. It can process csv, arf files and handle a single instance provided in the command line.  
+This model can be used in a command line interface to predict a patient's eosinophils measurements in three categories: low,mid,high based on six attributes with 47% accuracy.
+This command line interface can process the raw data and can do the necessary pre-processing like normalisation and log transform. It can process csv, arf files and handle a single instance provided in the command line.  
  
 ## discussion   
-what if new insight with this analysis of ml algo? EOS might be complex issue? param selection? No wieght on false negatives?
+what if new insight with this analysis of ml algo? EOS might be a complex issue? param selection? No weight on false negatives?
 While the accuracy of the model created by this study isn't that high, it might improve when more data becomes available. There are also a lot more attributes in this data set that might yield a better model and give further insights. Finding the more valuable attribute requires further automation in processing and attribute selection.    
-It might also be interesting to see if model can be created to predict the food that triggered the allergy which could help speed up illimination diets. However it is believed that this requires a different data set with more specific information about a patients diet. 
-
-There only a few of the many attributes that are looked at in this study. These attributes were picked based
-on the findings of the previous study. This is because of time limitations however it could be interesting
-to look at the rest of the data with more time efficient techniques and tools.   
+It might also be interesting to see if a model can be created to predict the food that triggered the allergy which could help speed up elimination diets. However it is believed that this requires a different data set with more specific information about a patient's diet to do so.   
 There are also a fair amount of missing values removed which might still be valuable because a missing value on its own can also convey
 information in some cases.  
 
 
 ## Conclusion 
-The resulting model is believed to be not accurate enough to be used in a clinical setting. It also found that the data set is too small to evaluated if a proper model can be created.   
-It is found that scaling by the standard deviation would be the most effective method for normalization for
-a future proof machine learning model.
+The resulting model is believed to be not accurate enough to be used in a clinical setting. It also found that the data set is too small to evaluate if a proper model can be created.   
+It is found that scaling by the standard deviation would be the most effective method for normalization for a future proof machine learning model.
 The data also benefits from a log2 transformation because it seems to be more normal distributed this way.   
-It is also found that some attribute like the different types of fat are correlated and that most attribute selection methods tend to prefer only one of the sub types of fat since each individual fat type do not convey a lot of information to those attivube selection algorithms.
+It is also found that some attributes like the different types of fat are correlated and that most attribute selection methods tend to prefer only one of the sub types of fat since each individual fat type do not convey a lot of information to those attribute selection algorithms.
 
 ## project proposal  
-Further improvement of the accuracy of the model could be explored in the high throughput biocomputing
-minor. A more advanced algorithm like a neural network could be trained to possibly get a higher accuracy.
-Getting a larger dataset would also be beneficial to prevent overfitting. A automated method of selecting and-pre processing attributes can then also be developed.  
+Further improvement of the accuracy of the model could be explored in the high throughput biocomputing minor. A more advanced algorithm like a neural network could be trained to possibly get a higher accuracy.
+Getting a larger dataset would also be beneficial to prevent overfitting. An automated method of selecting and-pre processing attributes can then also be developed.  
 
 Developing a simple user interface might also be a great improvement if this algorithm is used in a clinical setting.
 This user Interface could provide a way for the user to provide the data and perhaps a simple way to edit
-it. Having a graphical representation accompanied with general statistics of the resulting classifications
-could help users that do not have a deep understanding of machine learning to interpret the output of the
-algorithm.
-Developing an application for desktop computing on platforms like linux,mac and windows would be most
-useful since mobile applications would be more work to develop while not gaining much usability given the
-context. A web app could be useful however the app benefits from being verifiably open source
-when running locally. This is because researchers need to know exactly what program they are running in
+it. Having a graphical representation accompanied with general statistics of the resulting classifications could help users that do not have a deep understanding of machine learning to interpret the output of the algorithm.
+Developing an application for desktop computing on platforms like linux,mac and windows would be most useful since mobile applications would be more work to develop while not gaining much usability given the context of its future use in a clinical setting. A web app could be useful however the app benefits from being verifiably open source when running locally. This is because researchers need to know exactly what program they are running in
 order for their work to be reproducible.
     
 ## references  
-data source: 
 Eosinphilic Esophagitis: http://www.pghclinic.com/wp-content/uploads/2019/05/56.pdf
+
+
 
 
