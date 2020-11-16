@@ -1,0 +1,85 @@
+---
+title: "Predicting Eosinofiele Oesofagitis with machine learning - report"
+author: "Jim Jim Valkema"
+date: "11/16/2020"
+output: pdf_document
+---
+---
+title: "Birds' bones and living habits"
+author: "Jimjim Valkema"
+date: "9/10/2019"
+output:
+  pdf_document: default
+  html_document: default
+---
+## data set  
+TODO codebook
+
+## introduction  
+TODO: explain EOS, signifacance contribution to research, use case algo/cli, how data collected
+
+## materials and methods
+
+### software  
+TODO versions and double check missing libraries
+The exploratory data analysis has been done using rmarkdown with the following packages: 
+* ggplot: for creating plots    
+* gridExtra: further styling plots  
+* reshape2: transform data from wide and long formats  
+* rlist: appending items in a list  
+* ggcorrplot: creating a correlation plot  
+* cluster: creating pca clusters   
+  
+  
+Creating the machine learning model has been done in weka.  
+  
+Development of the wekawrapper has been done in intellij with the java programming language.  
+  
+### exploratory data analysis   
+TODO explain why scale norm,log, remove missing, distrubution, correlation
+
+### evaluation metrics    
+TODO why false negatives bad   
+
+### speed and scalability
+TODO why accuracy most important
+   
+### Exploring algorithms  
+TODO why no zeroR oneR and ibk (because no model = overfit)
+TODO algos used
+
+### meta algorithms  
+TODO: why different settings?
+
+### Attribute selection  
+Why different methods. Why high acc on low attr but still bad idea because overfit
+
+
+
+### links:
+Java wrapper: https://bitbucket.org/jjvalkema/wekawrapper/src/master/   
+Rmarkdown EDA: https://bitbucket.org/jjvalkema/thema_9/src/master/   
+
+## results    
+TODO alot of cleanup missing data, normalisation etc    
+ 
+TODO resulting model accuracy speed 
+  
+TODO why scaling norm
+
+TODO cli
+ 
+## discussion   
+TODO what if enough data? what if new insight with this analysis of ml algo? EOS might be complex issue? param selection? No wieght on false negatives?
+
+
+## Conclusion
+TODO not enough data, inaccurated, good work flow future projects (cli, analysis, etc)
+## project proposal  
+TODO further improvemnt: better data, explorer more attributes, nearal net
+TODO better cli / ui + why user + platforms
+    
+## references  
+data source: 
+
+
