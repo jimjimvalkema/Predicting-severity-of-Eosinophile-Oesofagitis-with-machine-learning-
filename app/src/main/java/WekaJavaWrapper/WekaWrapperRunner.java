@@ -82,14 +82,26 @@ public class WekaWrapperRunner {
         }
     }
 
+    /**
+     * get the header from a given csv file
+     * @param fileLocation
+     * @return
+     * @throws IOException
+     */
     private static String getHeader(String fileLocation) throws IOException {
         BufferedReader brTest = new BufferedReader(new FileReader(fileLocation));
         return brTest.readLine();
     }
 
+    /**
+     * Retrieves the indexes of the attributes needed for classification
+     * @param header
+     * @param extractingAttr
+     * @return
+     */
     private static Hashtable<String, Integer> getAttrIndexes(String header, String[] extractingAttr) {
         Hashtable<String, Integer> attrIndexes = new Hashtable<String, Integer>();
-        String[] splitHeader = header.split(",");
+        String[] splitHeader = header.split("[,;]");
         for (int i = 0; i < splitHeader.length; i++) {
             for (int j = 0; j < extractingAttr.length; j++) {
                 if (splitHeader[i].replaceAll(" ","").matches(extractingAttr[j])){

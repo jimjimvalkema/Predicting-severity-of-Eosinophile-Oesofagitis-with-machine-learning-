@@ -161,7 +161,7 @@ public class Normalizer {
 
     private double[] getValidInstance(String instance) {
         double[] instanceAsDouble = new double[attrIndexes.size()];
-        String[] instanceAsString = instance.split(",",-1);
+        String[] instanceAsString = instance.split("[,;]",-1);
         if (instanceAsString.length < 6) {
             throw new IllegalArgumentException("Instance is missing attributes. Instance has "
                     + instanceAsString.length + " attributes but needs to have 6");
@@ -291,30 +291,39 @@ public class Normalizer {
     }
 
 
+    /**
+     * set a dictionary with the attribute name as string and its mean as double
+     * @param means
+     */
     private void setMeans(Hashtable<String, Double>  means) {
         this.means = means;
     }
 
+    /**
+     * set a dictionary with the attribute name as string and its standard deviation as double
+     * @param sd
+     */
     private void setSd(Hashtable<String, Double> sd) {
         this.sd = sd;
     }
 
-    public Hashtable<String, Double>  getMeans() {
-        return means;
-    }
-
-    public Hashtable<String, Double>  getSd() {
-        return sd;
-    }
-
+    /**
+     * @return returns the header of the file that will be normalised
+     */
     public String getHeader() {
         return header;
     }
-
+    /**
+     * sets the header of the file that will be normalised
+     */
     public void setHeader(String header) {
         this.header = header;
     }
 
+    /**
+     * @param attrIndexes sets a hashtable with each attributes name and index in side of the file that will be
+     *                    normalised
+     */
     public void setAttrIndexes(Hashtable<String, Integer> attrIndexes) {
         this.attrIndexes = attrIndexes;
     }

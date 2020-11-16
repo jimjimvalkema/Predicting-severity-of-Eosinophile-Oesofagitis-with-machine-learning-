@@ -1,1 +1,1 @@
-typeSearchIndex = [{"l":"All Classes","url":"allclasses-index.html"},{"p":"WekaJavaWrapper","l":"ApacheCliOptionsProvider"},{"p":"WekaJavaWrapper","l":"WekaWrapperRunner"}]
+typeSearchIndex = [{"l":"All Classes","url":"allclasses-index.html"},{"p":"WekaJavaWrapper","l":"ApacheCliOptionsProvider"},{"p":"WekaJavaWrapper","l":"Normalizer"},{"p":"WekaJavaWrapper","l":"WekaWrapperRunner"}]
