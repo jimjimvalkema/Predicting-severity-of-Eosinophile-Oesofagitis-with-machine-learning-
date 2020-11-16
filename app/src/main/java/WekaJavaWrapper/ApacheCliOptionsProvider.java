@@ -125,8 +125,10 @@ public class ApacheCliOptionsProvider {
         //TODO number of classes wil be different
         HelpFormatter formatter = new HelpFormatter();
         formatter.printHelp(
-                "gjavaWrapper-1.0-SNAPSHOT-all.jar -f inputfile.csv or \n" +
-                        " javaWrapper-1.0-SNAPSHOT-all.jar -i 1,2,3,4,5,6,7,8,9,10", options);
+                "javaWrapper-1.0-SNAPSHOT-all.jar -f inputfile.csv or \n" +
+                        " javaWrapper-1.0-SNAPSHOT-all.jar -i 1,2,3,4,5,6 \n" +
+                        "with the attributes in the following order: \n"+
+                        "Neocate, Gender, B.Carbohydrates.gr, B.PUFAS.gr, B.Linoleicacid.gr, B.Calcium", options);
     }
 
     /**
